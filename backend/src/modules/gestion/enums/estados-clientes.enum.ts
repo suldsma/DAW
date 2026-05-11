@@ -1,0 +1,5 @@
+//BACKEND/SRC/MODULES/GESTION/ENUMS/ESTADOS-CLIENTES.ENUM.TS
+export enum EstadosClientesEnum {
+    ACTIVO = 'ACTIVO',
+    BAJA = 'BAJA'
+}

@@ -1,0 +1,5 @@
+//BACKEND/SRC/MODULES/AUTH/ENUMS/ESTADOS-USUARIOS.TS
+export enum EstadosUsuariosEnum{
+    ACTIVO = "ACTIVO",
+    BAJA = "BAJA"
+}
