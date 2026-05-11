@@ -1,4 +1,4 @@
-//backend/src/modules/gestion/controllers/proyectos.controller.ts
+// backend/src/modules/gestion/controllers/proyectos.controller.ts
 import { 
     Body, 
     Controller, 
@@ -13,7 +13,7 @@ import {
 } from "@nestjs/common";
 import { CreateProyectoDto } from "../dtos/input/create-proyecto.dto";
 import { UpdateProyectoDto } from "../dtos/input/update-proyecto.dto";
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiQuery } from "@nestjs/swagger";
 import { ListProyectoDTO } from "../dtos/output/list-proyecto.dto";
 import { ProyectoDTO } from "../dtos/output/proyecto.dto";
 import { ProyectosService } from "../services/proyectos.service";
@@ -22,7 +22,7 @@ import { EstadosProyectosEnum } from "../enums/estados-proyectos.enum";
 
 @ApiTags('Proyectos')
 @ApiBearerAuth()
-@UseGuards(AuthGuard) // Protección JWT requerida
+@UseGuards(AuthGuard) 
 @Controller('proyectos')
 export class ProyectosController {
 
@@ -44,12 +44,30 @@ export class ProyectosController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Listado de proyectos con info del cliente' })
+    @ApiOperation({ summary: 'Listado de proyectos con filtros de búsqueda avanzada' })
     @ApiOkResponse({ type: ListProyectoDTO, isArray: true })
-    async obtenerProyectos(@Query("estado") estado?: EstadosProyectosEnum): Promise<ListProyectoDTO[]> {
-        // ✅ Ajustado: Tu Service actualmente no recibe el parámetro 'estado'
-        // Si luego decides filtrar en el Service, puedes volver a pasarle la variable
-        return await this.proyectosService.obtenerProyectos();
+    @ApiQuery({ name: 'estado', required: false, enum: EstadosProyectosEnum })
+    @ApiQuery({ name: 'nombre', required: false, type: String, description: 'Filtro por nombre de proyecto' })
+    async obtenerProyectos(
+        @Query("nombre") nombre?: string,
+        @Query("estado") estado?: EstadosProyectosEnum
+    ): Promise<ListProyectoDTO[]> {
+        return await this.proyectosService.obtenerProyectos(nombre, estado);
+    }
+
+    @Get('exportar/csv')
+    @ApiOperation({ summary: 'Funcionalidad Extra: Exportar lista de proyectos a CSV' })
+    async exportarCSV() {
+        const proyectos = await this.proyectosService.obtenerProyectos();
+        const encabezado = "ID;Nombre;Estado;Cliente\n";
+        const filas = proyectos.map(p => 
+            `${p.id};${p.nombre};${p.estado};${p.cliente?.nombre || 'Interno'}`
+        ).join("\n");
+        
+        return { 
+            data: encabezado + filas,
+            filename: `reporte_proyectos_${new Date().getTime()}.csv`
+        };
     }
 
     @Get(':id')
@@ -62,7 +80,6 @@ export class ProyectosController {
     @Delete(':id')
     @ApiOperation({ summary: 'Eliminar un proyecto' })
     async eliminarProyecto(@Param('id', ParseIntPipe) id: number): Promise<void> {
-        // ✅ Llama al método que agregamos recién al ProyectosService
         await this.proyectosService.eliminarProyecto(id);
     }
 }

@@ -1,73 +1,109 @@
-//BACKEND/SRC/MODULES/GESTION/SERVICES/CLIENTES.SERVICE.TS
+// BACKEND/SRC/MODULES/GESTION/SERVICES/CLIENTES.SERVICE.TS
+import { Injectable, BadRequestException, forwardRef, Inject, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, FindOptionsWhere, Like } from "typeorm";
+
+// Entidades y Enums
 import { Cliente } from "../entities/cliente.entity";
-import { CreateClienteDto } from "../dtos/input/create-cliente.dto";
 import { EstadosClientesEnum } from "../enums/estados-clientes.enum";
+
+// DTOs
+import { CreateClienteDto } from "../dtos/input/create-cliente.dto";
 import { UpdateClienteDto } from "../dtos/input/update-cliente.dto";
-import { Injectable } from "@nestjs/common/decorators/core/injectable.decorator";
-import { FindOptionsWhere, Repository } from "typeorm";
 import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
-import { BadRequestException, forwardRef, Inject } from "@nestjs/common";
+
+// Servicios Relacionados
 import { ProyectosService } from "./proyectos.service";
 
 @Injectable()
 export class ClientesService {
 
-    constructor(@InjectRepository(Cliente) private readonly repository: Repository<Cliente>,
-        @Inject(forwardRef(() => ProyectosService)) private readonly proyectosService: ProyectosService) { }
+    constructor(
+        @InjectRepository(Cliente) 
+        private readonly repository: Repository<Cliente>,
+        
+        @Inject(forwardRef(() => ProyectosService)) 
+        private readonly proyectosService: ProyectosService
+    ) { }
+
+    // --- MÉTODOS DE LECTURA ---
+
+    /**
+     * Obtener listado con filtros de búsqueda avanzada
+     */
+    async obtenerClientes(estado?: EstadosClientesEnum, nombre?: string): Promise<ListClienteDTO[]> {
+        const where: FindOptionsWhere<Cliente> = {};
+
+        if (estado) where.estado = estado;
+        if (nombre) where.nombre = Like(`%${nombre}%`);
+
+        const clientes = await this.repository.find({
+            select: ['id', 'nombre', 'estado'],
+            where,
+            order: { id: 'ASC' }
+        });
+
+        return clientes.map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            estado: c.estado
+        }));
+    }
+
+    /**
+     * Verifica si un cliente existe y está activo (Usado por ProyectosService)
+     */
+    async existeClienteActivoPorId(id: number): Promise<boolean> {
+        return await this.repository.exists({ 
+            where: { id, estado: EstadosClientesEnum.ACTIVO } 
+        });
+    }
+
+    // --- MÉTODOS DE ESCRITURA ---
 
     async crearCliente(dto: CreateClienteDto): Promise<{ id: number }> {
-
         const cliente: Cliente = this.repository.create(dto);
         cliente.estado = EstadosClientesEnum.ACTIVO;
+        
         await this.repository.save(cliente);
         return { id: cliente.id };
     }
 
     async actualizarCliente(id: number, dto: UpdateClienteDto): Promise<void> {
-
-        const cliente: Cliente | null = await this.repository.findOneBy({ id });
+        const cliente = await this.repository.findOneBy({ id });
 
         if (!cliente) {
-            throw new BadRequestException('Cliente no encontrado');
+            throw new NotFoundException('Cliente no encontrado');
         }
 
-        const relacionadoConProyectos: boolean = await this.proyectosService.existeProyectoPorIdCliente(id);
-
-        if (relacionadoConProyectos && dto.estado === EstadosClientesEnum.BAJA) {
-            throw new BadRequestException('No se puede dar de baja un cliente con proyectos relacionados');
+        // REGLA DE NEGOCIO: No dar de baja si tiene proyectos activos o finalizados
+        if (dto.estado === EstadosClientesEnum.BAJA) {
+            const tieneProyectos = await this.proyectosService.existeProyectoPorIdCliente(id);
+            if (tieneProyectos) {
+                throw new BadRequestException('No se puede dar de baja un cliente con proyectos relacionados');
+            }
         }
 
         this.repository.merge(cliente, dto);
         await this.repository.save(cliente);
     }
 
-    async obtenerClientes(estado: EstadosClientesEnum): Promise<ListClienteDTO[]> {
-
-        const whereCondition: FindOptionsWhere<ListClienteDTO> = {}
-
-        if (estado){
-            whereCondition.estado = estado
+    /**
+     * Eliminación lógica o física (según prefieras para el TFI)
+     */
+    async eliminarCliente(id: number): Promise<void> {
+        const tieneProyectos = await this.proyectosService.existeProyectoPorIdCliente(id);
+        if (tieneProyectos) {
+            throw new BadRequestException('No se puede eliminar un cliente que tiene historia de proyectos');
         }
-
-        const clientes: Cliente[] = await this.repository.find({ select: { id: true, nombre: true, estado: true }, order: { id: 'ASC' }, where: whereCondition });
-
-        const dtoList: ListClienteDTO[] = [];
-
-        for (const c of clientes) {
-            const dto = new ListClienteDTO();
-            dto.id = c.id;
-            dto.nombre = c.nombre;
-            dto.estado = c.estado;
-            dtoList.push(dto);
-        }
-
-        return dtoList;
+        
+        const resultado = await this.repository.delete(id);
+        if (resultado.affected === 0) throw new NotFoundException('Cliente no encontrado');
     }
 
-    async existeClienteActivoPorId(id: number): Promise<boolean> {
+    // --- MÉTODOS DE ESTADÍSTICAS ---
 
-        const existe: boolean = await this.repository.exists({ where: { id, estado: EstadosClientesEnum.ACTIVO } });
-        return existe;
+    async contarClientesTotales(): Promise<number> {
+        return await this.repository.count();
     }
 }

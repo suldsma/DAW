@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>Nuevo Proyecto</h2>
+
+<mat-dialog-content [formGroup]="projectForm">
+  <div style="display: flex; flex-direction: column; gap: 15px; padding-top: 10px;">
+    
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre del Proyecto</mat-label>
+      <input matInput formInput formControlName="nombre" placeholder="Ej: Sistema Contable" required>
+      <mat-error *ngIf="projectForm.get('nombre')?.invalid">
+        El nombre es obligatorio
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Cliente (Opcional)</mat-label>
+      <mat-select formControlName="id_cliente">
+        <mat-option [value]="null">-- Sin cliente (Interno) --</mat-option>
+        <mat-option *ngFor="let c of clientes" [value]="c.id">
+          {{c.nombre}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">CANCELAR</button>
+  <button mat-raised-button 
+          color="primary" 
+          (click)="guardar()" 
+          [disabled]="projectForm.invalid">
+    GUARDAR
+  </button>
+</mat-dialog-actions>

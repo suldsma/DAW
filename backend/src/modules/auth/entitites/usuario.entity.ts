@@ -1,20 +1,22 @@
-//BACKEND/SRC/MODULES/AUTH/ENTITITES/USUARIO.ENTITY.TS
+// BACKEND/SRC/MODULES/AUTH/ENTITITES/USUARIO.ENTITY.TS
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { EstadosUsuariosEnum } from "../enums/estados-usuarios.enum";
 
-@Entity({name: "usuarios"})
-export class Usuario{
+@Entity({ name: "usuarios" })
+export class Usuario {
 
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
-    nombre!: string
+    @Column({ unique: true }) // Refleja la restricción del Script SQL
+    nombre!: string;
 
-    @Column()
-    clave!: string
+    @Column({ select: false }) // ✅ Seguridad: No incluye la clave en las consultas por defecto
+    clave!: string;
 
-    @Column({type: 'enum', enum: EstadosUsuariosEnum})
-    estado!: EstadosUsuariosEnum
-
+    @Column({
+        type: 'enum',
+        enum: EstadosUsuariosEnum
+    })
+    estado!: EstadosUsuariosEnum;
 }

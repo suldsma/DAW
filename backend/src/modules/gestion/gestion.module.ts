@@ -1,4 +1,4 @@
-//BACKEND/SRC/MODULES/GESTION/GESTION.MODULE.TS
+// BACKEND/SRC/MODULES/GESTION/GESTION.MODULE.TS
 import { Module } from "@nestjs/common";
 import { ClientesController } from "./controllers/clientes.controller";
 import { ProyectosController } from "./controllers/proyectos.controller";
@@ -15,12 +15,11 @@ import { ProyectosService } from "./services/proyectos.service";
 @Module({
     controllers: [ClientesController, ProyectosController, TareasController],
     providers: [TareasService, ClientesService, ProyectosService],
-    exports: [],
+    // ✅ EXPORTAMOS LOS SERVICIOS PARA QUE EL MÓDULO DE ESTADÍSTICAS LOS USE
+    exports: [ClientesService, ProyectosService, TareasService], 
     imports: [
         TypeOrmModule.forFeature([Tarea, Cliente, Proyecto]),
         AuthModule
     ]
 })
-export class GestionModule {
-
-}
+export class GestionModule {}
