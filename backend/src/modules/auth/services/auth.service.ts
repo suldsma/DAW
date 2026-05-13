@@ -1,76 +1,293 @@
 // BACKEND/SRC/MODULES/AUTH/SERVICES/AUTH.SERVICE.TS
-import { Injectable, UnauthorizedException, BadRequestException } from "@nestjs/common";
+// ✅ VERSIÓN COMPLETA, SEGURA Y MEJORADA
+
+import {
+    Injectable,
+    UnauthorizedException,
+    BadRequestException
+} from "@nestjs/common";
+
 import * as bcrypt from 'bcrypt';
+
 import { JwtService } from "@nestjs/jwt";
+
+// DTOs
 import { LoginDto } from "../dtos/input/login.dto";
+
+// Services
 import { UsuariosService } from "./usuarios.service";
+
+// Enum
+import { EstadosUsuariosEnum } from "../enums/estados-usuarios.enum";
+
+/**
+ * =====================================================
+ * INTERFACE JWT PAYLOAD
+ * =====================================================
+ */
+interface JwtPayload {
+
+    sub: number;
+
+    nombre: string;
+
+    estado: EstadosUsuariosEnum;
+}
 
 @Injectable()
 export class AuthService {
 
     constructor(
+
         private readonly usuariosService: UsuariosService,
-        private jwtService: JwtService
+
+        private readonly jwtService: JwtService
+
     ) { }
 
-    async login(dto: LoginDto): Promise<{ accessToken: string }> {
-        // Validar campos requeridos
-        if (!dto.nombre || !dto.clave) {
-            throw new BadRequestException("Usuario y contraseña son requeridos");
+    /**
+     * =====================================================
+     * LOGIN
+     * =====================================================
+     * Flujo:
+     * - Validar datos
+     * - Buscar usuario activo
+     * - Comparar contraseña
+     * - Generar JWT
+     */
+    async login(
+        dto: LoginDto
+    ): Promise<{ accessToken: string }> {
+
+        /**
+         * =====================================================
+         * VALIDAR DATOS REQUERIDOS
+         * =====================================================
+         */
+        if (!dto.nombre?.trim()) {
+
+            throw new BadRequestException(
+                'El nombre de usuario es obligatorio'
+            );
         }
 
-        const usuario = await this.usuariosService.buscarUsuarioActivoPorNombre(dto.nombre);
+        if (!dto.clave?.trim()) {
 
-        // Usuario no existe
+            throw new BadRequestException(
+                'La contraseña es obligatoria'
+            );
+        }
+
+        /**
+         * =====================================================
+         * NORMALIZAR NOMBRE
+         * =====================================================
+         */
+        const nombreNormalizado =
+            dto.nombre
+                .trim()
+                .toLowerCase();
+
+        /**
+         * =====================================================
+         * BUSCAR USUARIO ACTIVO
+         * =====================================================
+         */
+        const usuario =
+            await this.usuariosService
+                .buscarUsuarioActivoPorNombre(
+                    nombreNormalizado
+                );
+
+        /**
+         * =====================================================
+         * USUARIO NO EXISTE
+         * =====================================================
+         * Mensaje genérico por seguridad
+         */
         if (!usuario) {
-            throw new UnauthorizedException("Usuario o contraseña incorrectos");
+
+            throw new UnauthorizedException(
+                'Usuario o contraseña incorrectos'
+            );
         }
 
-        // Comparar contraseña usando bcrypt
-        // ✅ CORREGIDO: Ahora compatible con bcrypt
-        const passwordValida = await bcrypt.compare(dto.clave, usuario.clave);
+        /**
+         * =====================================================
+         * VALIDAR CONTRASEÑA
+         * =====================================================
+         */
+        const passwordValida =
+            await bcrypt.compare(
+                dto.clave,
+                usuario.clave
+            );
 
         if (!passwordValida) {
-            throw new UnauthorizedException("Usuario o contraseña incorrectos");
+
+            throw new UnauthorizedException(
+                'Usuario o contraseña incorrectos'
+            );
         }
 
-        // Generar JWT con información del usuario
-        const payload = { 
-            sub: usuario.id, 
+        /**
+         * =====================================================
+         * VALIDACIÓN EXTRA DE ESTADO
+         * =====================================================
+         */
+        if (
+            usuario.estado !==
+            EstadosUsuariosEnum.ACTIVO
+        ) {
+
+            throw new UnauthorizedException(
+                'La cuenta de usuario está inhabilitada'
+            );
+        }
+
+        /**
+         * =====================================================
+         * GENERAR PAYLOAD JWT
+         * =====================================================
+         */
+        const payload: JwtPayload = {
+
+            sub: usuario.id,
+
             nombre: usuario.nombre,
+
             estado: usuario.estado
         };
 
+        /**
+         * =====================================================
+         * GENERAR TOKEN JWT
+         * =====================================================
+         */
+        const accessToken =
+            await this.jwtService.signAsync(payload);
+
+        /**
+         * =====================================================
+         * RESPUESTA
+         * =====================================================
+         */
         return {
-            accessToken: this.jwtService.sign(payload)
+            accessToken
         };
     }
 
     /**
-     * Hash de contraseña para crear nuevos usuarios o cambiar contraseña
-     * Utiliza bcrypt con salt rounds = 10
+     * =====================================================
+     * HASH PASSWORD
+     * =====================================================
+     * Utilizado para:
+     * - Crear usuarios
+     * - Cambiar contraseña
      */
-    async hashPassword(password: string): Promise<string> {
+    async hashPassword(
+        password: string
+    ): Promise<string> {
+
+        /**
+         * Validar formato antes de hashear
+         */
+        const validacion =
+            this.validarFormatoPassword(password);
+
+        if (!validacion.valido) {
+
+            throw new BadRequestException(
+                validacion.mensaje
+            );
+        }
+
+        /**
+         * Salt rounds bcrypt
+         */
         const saltRounds = 10;
-        return await bcrypt.hash(password, saltRounds);
+
+        return await bcrypt.hash(
+            password,
+            saltRounds
+        );
     }
 
     /**
-     * Validar formato de contraseña antes de guardar
-     * - Mínimo 6 caracteres
-     * - Al menos un número
-     * - Al menos una mayúscula
+     * =====================================================
+     * VALIDAR FORMATO PASSWORD
+     * =====================================================
+     * Reglas:
+     * - mínimo 6 caracteres
+     * - al menos 1 número
+     * - al menos 1 mayúscula
+     * - al menos 1 carácter especial
      */
-    validarFormatoPassword(password: string): { valido: boolean; mensaje?: string } {
+    validarFormatoPassword(
+        password: string
+    ): {
+        valido: boolean;
+        mensaje?: string;
+    } {
+
+        /**
+         * Password vacía
+         */
+        if (!password?.trim()) {
+
+            return {
+                valido: false,
+                mensaje: 'La contraseña es obligatoria'
+            };
+        }
+
+        /**
+         * Longitud mínima
+         */
         if (password.length < 6) {
-            return { valido: false, mensaje: "Mínimo 6 caracteres" };
+
+            return {
+                valido: false,
+                mensaje: 'La contraseña debe tener al menos 6 caracteres'
+            };
         }
+
+        /**
+         * Número obligatorio
+         */
         if (!/\d/.test(password)) {
-            return { valido: false, mensaje: "Debe contener al menos un número" };
+
+            return {
+                valido: false,
+                mensaje: 'La contraseña debe contener al menos un número'
+            };
         }
+
+        /**
+         * Mayúscula obligatoria
+         */
         if (!/[A-Z]/.test(password)) {
-            return { valido: false, mensaje: "Debe contener al menos una mayúscula" };
+
+            return {
+                valido: false,
+                mensaje: 'La contraseña debe contener al menos una mayúscula'
+            };
         }
-        return { valido: true };
+
+        /**
+         * Carácter especial obligatorio
+         */
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+
+            return {
+                valido: false,
+                mensaje: 'La contraseña debe contener al menos un carácter especial'
+            };
+        }
+
+        return {
+            valido: true
+        };
     }
+
 }

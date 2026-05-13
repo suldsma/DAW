@@ -1,181 +1,479 @@
 // BACKEND/SRC/MODULES/GESTION/SERVICES/CLIENTES.SERVICE.TS
-import { 
-    Injectable, 
-    BadRequestException, 
-    forwardRef, 
-    Inject, 
-    NotFoundException,
-    ConflictException
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, FindOptionsWhere, Like } from "typeorm";
+// ✅ VERSIÓN COMPLETA, OPTIMIZADA Y CORREGIDA
 
-// Entidades y Enums
+import {
+    Injectable,
+    BadRequestException,
+    ConflictException,
+    forwardRef,
+    Inject,
+    NotFoundException
+} from "@nestjs/common";
+
+import { InjectRepository } from "@nestjs/typeorm";
+
+import {
+    Repository,
+    FindOptionsWhere,
+    ILike
+} from "typeorm";
+
+// =====================================================
+// ENTIDADES Y ENUMS
+// =====================================================
+
 import { Cliente } from "../entities/cliente.entity";
+
 import { EstadosClientesEnum } from "../enums/estados-clientes.enum";
 
-// DTOs
+// =====================================================
+// DTOS
+// =====================================================
+
 import { CreateClienteDto } from "../dtos/input/create-cliente.dto";
+
 import { UpdateClienteDto } from "../dtos/input/update-cliente.dto";
+
 import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
 
-// Servicios Relacionados
+// =====================================================
+// SERVICES
+// =====================================================
+
 import { ProyectosService } from "./proyectos.service";
 
 @Injectable()
 export class ClientesService {
 
     constructor(
-        @InjectRepository(Cliente) 
+
+        @InjectRepository(Cliente)
         private readonly repository: Repository<Cliente>,
-        
-        @Inject(forwardRef(() => ProyectosService)) 
+
+        @Inject(
+            forwardRef(() => ProyectosService)
+        )
         private readonly proyectosService: ProyectosService
+
     ) { }
 
-    // --- MÉTODOS DE LECTURA ---
+    // =====================================================
+    // NORMALIZACIÓN
+    // =====================================================
 
     /**
-     * Obtener listado con filtros de búsqueda avanzada
-     * @param estado - Filtro opcional por estado
-     * @param nombre - Filtro opcional por nombre (búsqueda parcial)
-     * @returns Array de clientes mapeados a DTO
+     * Normalizar nombre:
+     * - trim
+     * - espacios múltiples
      */
-    async obtenerClientes(estado?: EstadosClientesEnum, nombre?: string): Promise<ListClienteDTO[]> {
+    private normalizarNombre(
+        nombre: string
+    ): string {
+
+        return nombre
+            .trim()
+            .replace(/\s+/g, ' ');
+    }
+
+    // =====================================================
+    // MÉTODOS DE LECTURA
+    // =====================================================
+
+    /**
+     * Obtener clientes con filtros opcionales
+     */
+    async obtenerClientes(
+        estado?: EstadosClientesEnum,
+        nombre?: string
+    ): Promise<ListClienteDTO[]> {
+
         const where: FindOptionsWhere<Cliente> = {};
 
-        if (estado) where.estado = estado;
-        if (nombre) where.nombre = Like(`%${nombre}%`);
+        /**
+         * Filtro estado
+         */
+        if (estado) {
 
-        const clientes = await this.repository.find({
-            select: ['id', 'nombre', 'estado'],
-            where,
-            order: { nombre: 'ASC' } // ✅ MEJORADO: Ordenar alfabéticamente por defecto
-        });
+            where.estado = estado;
+        }
 
-        return clientes.map(this.mapToListDto);
+        /**
+         * Filtro búsqueda parcial nombre
+         * ILike = case insensitive PostgreSQL
+         */
+        if (nombre?.trim()) {
+
+            where.nombre = ILike(
+                `%${nombre.trim()}%`
+            );
+        }
+
+        /**
+         * Buscar clientes
+         */
+        const clientes =
+            await this.repository.find({
+
+                select: [
+                    'id',
+                    'nombre',
+                    'estado'
+                ],
+
+                where,
+
+                order: {
+                    nombre: 'ASC'
+                }
+            });
+
+        /**
+         * Mapear DTO
+         */
+        return clientes.map(
+            cliente => this.mapToListDto(cliente)
+        );
     }
 
     /**
-     * Obtener un cliente específico por ID con sus proyectos
+     * Obtener cliente por ID
      */
-    async obtenerClientePorId(id: number): Promise<ListClienteDTO> {
-        const cliente = await this.repository.findOneBy({ id });
+    async obtenerClientePorId(
+        id: number
+    ): Promise<ListClienteDTO> {
+
+        const cliente =
+            await this.repository.findOne({
+
+                where: { id },
+
+                select: [
+                    'id',
+                    'nombre',
+                    'estado'
+                ]
+            });
 
         if (!cliente) {
-            throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+
+            throw new NotFoundException(
+                `Cliente con ID ${id} no encontrado`
+            );
         }
 
         return this.mapToListDto(cliente);
     }
 
     /**
-     * Verifica si un cliente existe y está activo
-     * Usado por ProyectosService para validar cliente activo
+     * Verificar existencia cliente activo
      */
-    async existeClienteActivoPorId(id: number): Promise<boolean> {
-        return await this.repository.exists({ 
-            where: { id, estado: EstadosClientesEnum.ACTIVO } 
+    async existeClienteActivoPorId(
+        id: number
+    ): Promise<boolean> {
+
+        return await this.repository.exists({
+
+            where: {
+                id,
+                estado: EstadosClientesEnum.ACTIVO
+            }
         });
     }
 
     /**
-     * Verifica si un nombre de cliente ya existe
+     * Verificar existencia por nombre
      */
-    async existeClientePorNombre(nombre: string, excluyendoId?: number): Promise<boolean> {
-        const query = this.repository.createQueryBuilder('cliente')
-            .where('LOWER(cliente.nombre) = LOWER(:nombre)', { nombre });
-        
+    async existeClientePorNombre(
+        nombre: string,
+        excluyendoId?: number
+    ): Promise<boolean> {
+
+        const nombreNormalizado =
+            this.normalizarNombre(nombre);
+
+        const query =
+            this.repository
+                .createQueryBuilder('cliente')
+
+                .where(
+                    'LOWER(cliente.nombre) = LOWER(:nombre)',
+                    {
+                        nombre: nombreNormalizado
+                    }
+                );
+
+        /**
+         * Excluir ID en update
+         */
         if (excluyendoId) {
-            query.andWhere('cliente.id != :id', { id: excluyendoId });
+
+            query.andWhere(
+                'cliente.id != :id',
+                {
+                    id: excluyendoId
+                }
+            );
         }
 
-        return (await query.getCount()) > 0;
+        return (
+            await query.getCount()
+        ) > 0;
     }
 
-    // --- MÉTODOS DE ESCRITURA ---
+    // =====================================================
+    // MÉTODOS DE ESCRITURA
+    // =====================================================
 
-    async crearCliente(dto: CreateClienteDto): Promise<{ id: number }> {
-        // ✅ VALIDACIÓN: Verificar que el nombre sea único
-        const yaExiste = await this.existeClientePorNombre(dto.nombre);
+    /**
+     * Crear cliente
+     */
+    async crearCliente(
+        dto: CreateClienteDto
+    ): Promise<{ id: number }> {
+
+        /**
+         * Normalizar nombre
+         */
+        const nombreNormalizado =
+            this.normalizarNombre(dto.nombre);
+
+        /**
+         * Validar duplicados
+         */
+        const yaExiste =
+            await this.existeClientePorNombre(
+                nombreNormalizado
+            );
+
         if (yaExiste) {
-            throw new ConflictException(`Ya existe un cliente con el nombre "${dto.nombre}"`);
+
+            throw new ConflictException(
+                `Ya existe un cliente con el nombre "${nombreNormalizado}"`
+            );
         }
 
-        const cliente: Cliente = this.repository.create(dto);
-        cliente.estado = EstadosClientesEnum.ACTIVO;
-        
-        await this.repository.save(cliente);
-        return { id: cliente.id };
+        /**
+         * Crear entidad
+         */
+        const cliente =
+            this.repository.create({
+
+                ...dto,
+
+                nombre: nombreNormalizado,
+
+                estado:
+                    EstadosClientesEnum.ACTIVO
+            });
+
+        /**
+         * Guardar
+         */
+        const clienteGuardado =
+            await this.repository.save(cliente);
+
+        return {
+            id: clienteGuardado.id
+        };
     }
 
-    async actualizarCliente(id: number, dto: UpdateClienteDto): Promise<void> {
-        const cliente = await this.repository.findOneBy({ id });
+    /**
+     * Actualizar cliente
+     */
+    async actualizarCliente(
+        id: number,
+        dto: UpdateClienteDto
+    ): Promise<void> {
+
+        /**
+         * Buscar cliente
+         */
+        const cliente =
+            await this.repository.findOneBy({ id });
 
         if (!cliente) {
-            throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+
+            throw new NotFoundException(
+                `Cliente con ID ${id} no encontrado`
+            );
         }
 
-        // ✅ VALIDACIÓN: Si se actualiza el nombre, verificar unicidad
-        if (dto.nombre && dto.nombre !== cliente.nombre) {
-            const yaExiste = await this.existeClientePorNombre(dto.nombre, id);
-            if (yaExiste) {
-                throw new ConflictException(`Ya existe un cliente con el nombre "${dto.nombre}"`);
+        /**
+         * Validar unicidad nombre
+         */
+        if (dto.nombre?.trim()) {
+
+            const nombreNormalizado =
+                this.normalizarNombre(
+                    dto.nombre
+                );
+
+            /**
+             * Verificar cambios
+             */
+            if (
+                nombreNormalizado.toLowerCase() !==
+                cliente.nombre.toLowerCase()
+            ) {
+
+                const yaExiste =
+                    await this.existeClientePorNombre(
+                        nombreNormalizado,
+                        id
+                    );
+
+                if (yaExiste) {
+
+                    throw new ConflictException(
+                        `Ya existe un cliente con el nombre "${nombreNormalizado}"`
+                    );
+                }
             }
+
+            dto.nombre = nombreNormalizado;
         }
 
-        // ✅ REGLA DE NEGOCIO: No dar de baja si tiene proyectos
-        if (dto.estado === EstadosClientesEnum.BAJA) {
-            const tieneProyectos = await this.proyectosService.existeProyectoPorIdCliente(id);
+        /**
+         * Validar baja lógica
+         */
+        if (
+            dto.estado ===
+            EstadosClientesEnum.BAJA
+        ) {
+
+            const tieneProyectos =
+                await this.proyectosService
+                    .existeProyectoPorIdCliente(
+                        id
+                    );
+
             if (tieneProyectos) {
+
                 throw new BadRequestException(
                     'No se puede dar de baja un cliente con proyectos relacionados'
                 );
             }
         }
 
-        Object.assign(cliente, dto);
+        /**
+         * Actualizar entidad
+         */
+        Object.assign(
+            cliente,
+            dto
+        );
+
+        /**
+         * Guardar cambios
+         */
         await this.repository.save(cliente);
     }
 
     /**
-     * Eliminar un cliente (solo si no tiene proyectos activos o finalizados)
+     * =====================================================
+     * BAJA LÓGICA CLIENTE
+     * =====================================================
+     * IMPORTANTE:
+     * No elimina físicamente el registro.
      */
-    async eliminarCliente(id: number): Promise<void> {
-        const cliente = await this.repository.findOneBy({ id });
-        
-        if (!cliente) {
-            throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
-        }
+    async eliminarCliente(
+        id: number
+    ): Promise<void> {
 
-        const tieneProyectos = await this.proyectosService.existeProyectoPorIdCliente(id);
-        if (tieneProyectos) {
-            throw new BadRequestException(
-                'No se puede eliminar un cliente que tiene proyectos relacionados'
+        /**
+         * Buscar cliente
+         */
+        const cliente =
+            await this.repository.findOneBy({ id });
+
+        if (!cliente) {
+
+            throw new NotFoundException(
+                `Cliente con ID ${id} no encontrado`
             );
         }
-        
-        await this.repository.delete(id);
+
+        /**
+         * Validar proyectos relacionados
+         */
+        const tieneProyectos =
+            await this.proyectosService
+                .existeProyectoPorIdCliente(id);
+
+        if (tieneProyectos) {
+
+            throw new BadRequestException(
+                'No se puede eliminar un cliente con proyectos relacionados'
+            );
+        }
+
+        /**
+         * Ya está dado de baja
+         */
+        if (
+            cliente.estado ===
+            EstadosClientesEnum.BAJA
+        ) {
+
+            throw new BadRequestException(
+                'El cliente ya se encuentra dado de baja'
+            );
+        }
+
+        /**
+         * Baja lógica
+         */
+        cliente.estado =
+            EstadosClientesEnum.BAJA;
+
+        /**
+         * Guardar cambios
+         */
+        await this.repository.save(cliente);
     }
 
-    // --- MÉTODOS DE ESTADÍSTICAS ---
+    // =====================================================
+    // ESTADÍSTICAS
+    // =====================================================
 
+    /**
+     * Total clientes
+     */
     async contarClientesTotales(): Promise<number> {
+
         return await this.repository.count();
     }
 
+    /**
+     * Total clientes activos
+     */
     async contarClientesActivos(): Promise<number> {
+
         return await this.repository.count({
-            where: { estado: EstadosClientesEnum.ACTIVO }
+
+            where: {
+                estado: EstadosClientesEnum.ACTIVO
+            }
         });
     }
 
-    // --- MÉTODOS PRIVADOS ---
+    // =====================================================
+    // MÉTODOS PRIVADOS
+    // =====================================================
 
-    private mapToListDto(cliente: Cliente): ListClienteDTO {
+    /**
+     * Mapper DTO listado
+     */
+    private mapToListDto(
+        cliente: Cliente
+    ): ListClienteDTO {
+
         return {
+
             id: cliente.id,
+
             nombre: cliente.nombre,
+
             estado: cliente.estado
         };
     }

@@ -1,26 +1,64 @@
+// BACKEND/SRC/MODULES/ESTADISTICAS/CONTROLLERS/ESTADISTICAS.CONTROLLER.SPEC.TS
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { EstadisticasController } from './estadisticas.controller';
-import { EstadisticasService } from '../services/estadisticas.service';
+
+import { EstadisticasController }
+    from './estadisticas.controller';
+
+import { EstadisticasService }
+    from '../services/estadisticas.service';
 
 describe('EstadisticasController', () => {
-  let controller: EstadisticasController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [EstadisticasController],
-      // Necesitas meter el servicio aquí porque el controlador lo pide en el constructor
-      providers: [
-        {
-          provide: EstadisticasService,
-          useValue: {}, // Un objeto vacío sirve para que el test inicial pase
-        },
-      ],
-    }).compile();
+    let controller: EstadisticasController;
 
-    controller = module.get<EstadisticasController>(EstadisticasController);
-  });
+    /**
+     * Mock del servicio
+     */
+    const mockEstadisticasService = {
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
+        obtenerResumenGeneral: jest.fn(),
+
+        obtenerEstadisticasPorCliente: jest.fn(),
+
+        obtenerEstadisticasPorProyecto: jest.fn(),
+
+        obtenerProyectosProximosACompletarse: jest.fn(),
+
+        obtenerProyectosAtrasados: jest.fn()
+    };
+
+    beforeEach(async () => {
+
+        const module: TestingModule =
+            await Test.createTestingModule({
+
+                controllers: [
+                    EstadisticasController
+                ],
+
+                providers: [
+                    {
+                        provide: EstadisticasService,
+                        useValue: mockEstadisticasService
+                    }
+                ]
+            }).compile();
+
+        controller = module.get<EstadisticasController>(
+            EstadisticasController
+        );
+    });
+
+    /**
+     * =====================================================
+     * TESTS
+     * =====================================================
+     */
+
+    it('should be defined', () => {
+
+        expect(controller).toBeDefined();
+    });
+
 });

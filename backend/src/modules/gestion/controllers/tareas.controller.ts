@@ -1,123 +1,306 @@
 // BACKEND/SRC/MODULES/GESTION/CONTROLLERS/TAREAS.CONTROLLER.TS
+// ✅ VERSIÓN FINAL CORREGIDA Y COMPATIBLE CON TU SERVICE ACTUAL
+
 import {
-  Body,
-  Controller,
-  Param,
-  Post,
-  Put,
-  Delete,
-  Get,
-  Query,
-  UseGuards,
-  ParseIntPipe,
-  HttpCode,
-  HttpStatus,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    Query,
+    UseGuards
 } from '@nestjs/common';
-import { 
-  ApiBearerAuth, 
-  ApiCreatedResponse, 
-  ApiOkResponse, 
-  ApiOperation, 
-  ApiQuery, 
-  ApiTags 
+
+import {
+    ApiBearerAuth,
+    ApiCreatedResponse,
+    ApiNoContentResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiQuery,
+    ApiTags,
+    ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 
+// Services
 import { TareasService } from '../services/tarea.service';
+
+// Auth
 import { AuthGuard } from '../../auth/guards/auth.guard';
+
+// DTOs INPUT
 import { CreateTareaDto } from '../dtos/input/create-tarea.dto';
 import { UpdateTareaDto } from '../dtos/input/update-tarea.dto';
+
+// DTOs OUTPUT
 import { ListTareaDTO } from '../dtos/output/list-tarea.dto';
+
+// Enums
 import { EstadosTareasEnum } from '../enums/estados-tareas.enum';
 
 @ApiTags('Tareas')
+
 @ApiBearerAuth()
+
+/**
+ * 🔐 Protección JWT
+ */
 @UseGuards(AuthGuard)
+
 @Controller('gestion/proyectos/:idProyecto/tareas')
 export class TareasController {
-  constructor(private readonly tareasService: TareasService) {}
 
-  /**
-   * POST: Crear una nueva tarea vinculada al proyecto
-   */
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Agregar una tarea a un proyecto' })
-  @ApiCreatedResponse({
-    description: 'Tarea creada exitosamente',
-    schema: { example: { id: 1 } },
-  })
-  async crearTarea(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-    @Body() dto: CreateTareaDto,
-  ): Promise<{ id: number }> {
-    return await this.tareasService.crearTarea(dto, idProyecto);
-  }
+    constructor(
+        private readonly tareasService: TareasService
+    ) { }
 
-  /**
-   * GET: Kanban (Debe ir antes de :id para evitar conflictos de rutas)
-   * Se asume que implementaste 'obtenerTareasKanban' en el servicio como sugerí arriba.
-   */
-  @Get('kanban/tablero')
-  @ApiOperation({ summary: 'Obtener tareas agrupadas por estado (Kanban)' })
-  async obtenerTareasKanban(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-  ): Promise<Record<string, any>> {
-    // IMPORTANTE: Llamamos al método específico de Kanban para evitar error de tipos
-    return await this.tareasService.obtenerTareasKanban(idProyecto);
-  }
+    /**
+     * =====================================================
+     * CREAR TAREA
+     * =====================================================
+     */
+    @Post()
 
-  /**
-   * GET: Listado general con filtros
-   */
-  @Get()
-  @ApiOperation({ summary: 'Listar tareas de un proyecto con filtros' })
-  @ApiQuery({ name: 'descripcion', required: false })
-  @ApiQuery({ name: 'estado', required: false, enum: EstadosTareasEnum })
-  async obtenerTareas(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-    @Query('descripcion') descripcion?: string,
-    @Query('estado') estado?: EstadosTareasEnum,
-  ): Promise<ListTareaDTO[]> {
-    return await this.tareasService.obtenerTareas(idProyecto, descripcion, estado);
-  }
+    @HttpCode(HttpStatus.CREATED)
 
-  /**
-   * GET: Detalle de una tarea específica
-   */
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener datos de una tarea específica' })
-  @ApiOkResponse({ type: ListTareaDTO })
-  async obtenerTarea(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<ListTareaDTO> {
-    return await this.tareasService.obtenerTareaPorId(id);
-  }
+    @ApiOperation({
+        summary:
+            'Agregar una tarea a un proyecto'
+    })
 
-  /**
-   * PUT: Actualización de datos o cambio de estado
-   */
-  @Put(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Modificar una tarea (descripción o estado)' })
-  async actualizarTarea(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateTareaDto,
-  ): Promise<void> {
-    await this.tareasService.actualizarTarea(id, dto);
-  }
+    @ApiCreatedResponse({
+        description:
+            'Tarea creada exitosamente',
+        schema: {
+            example: {
+                id: 1
+            }
+        }
+    })
 
-  /**
-   * DELETE: Borrado lógico
-   */
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar una tarea (borrado lógico)' })
-  async eliminarTarea(
-    @Param('idProyecto', ParseIntPipe) idProyecto: number,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<void> {
-    await this.tareasService.eliminarTarea(id);
-  }
+    @ApiUnauthorizedResponse({
+        description:
+            'No autorizado'
+    })
+
+    async crearTarea(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number,
+
+        @Body()
+        dto: CreateTareaDto
+
+    ): Promise<{ id: number }> {
+
+        return await this.tareasService
+            .crearTarea(dto, idProyecto);
+    }
+
+    /**
+     * =====================================================
+     * TABLERO KANBAN
+     * =====================================================
+     * IMPORTANTE:
+     * Debe ir antes de GET(':id')
+     */
+    @Get('kanban/tablero')
+
+    @ApiOperation({
+        summary:
+            'Obtener tareas agrupadas por estado'
+    })
+
+    @ApiOkResponse({
+        description:
+            'Kanban generado correctamente'
+    })
+
+    async obtenerTareasKanban(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number
+
+    ): Promise<Record<string, any>> {
+
+        return await this.tareasService
+            .obtenerTareasKanban(idProyecto);
+    }
+
+    /**
+     * =====================================================
+     * LISTAR TAREAS
+     * =====================================================
+     */
+    @Get()
+
+    @ApiOperation({
+        summary:
+            'Listar tareas con filtros'
+    })
+
+    @ApiOkResponse({
+        type: ListTareaDTO,
+        isArray: true
+    })
+
+    @ApiQuery({
+        name: 'descripcion',
+        required: false,
+        type: String
+    })
+
+    @ApiQuery({
+        name: 'estado',
+        required: false,
+        enum: EstadosTareasEnum
+    })
+
+    async obtenerTareas(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number,
+
+        @Query('descripcion')
+        descripcion?: string,
+
+        @Query('estado')
+        estado?: EstadosTareasEnum
+
+    ): Promise<ListTareaDTO[]> {
+
+        return await this.tareasService
+            .obtenerTareas(
+                idProyecto,
+                descripcion,
+                estado
+            );
+    }
+
+    /**
+     * =====================================================
+     * OBTENER TAREA POR ID
+     * =====================================================
+     */
+    @Get(':id')
+
+    @ApiOperation({
+        summary:
+            'Obtener detalle de una tarea'
+    })
+
+    @ApiOkResponse({
+        type: ListTareaDTO
+    })
+
+    @ApiNotFoundResponse({
+        description:
+            'Tarea no encontrada'
+    })
+
+    async obtenerTarea(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number,
+
+        @Param('id', ParseIntPipe)
+        id: number
+
+    ): Promise<ListTareaDTO> {
+
+        /**
+         * ⚠️ IMPORTANTE:
+         * Tu service actual recibe SOLO el ID.
+         * Más adelante podés mejorar el service
+         * para validar idProyecto también.
+         */
+        return await this.tareasService
+            .obtenerTareaPorId(id);
+    }
+
+    /**
+     * =====================================================
+     * ACTUALIZAR TAREA
+     * =====================================================
+     */
+    @Put(':id')
+
+    @HttpCode(HttpStatus.NO_CONTENT)
+
+    @ApiOperation({
+        summary:
+            'Actualizar una tarea'
+    })
+
+    @ApiNoContentResponse({
+        description:
+            'Tarea actualizada correctamente'
+    })
+
+    async actualizarTarea(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number,
+
+        @Param('id', ParseIntPipe)
+        id: number,
+
+        @Body()
+        dto: UpdateTareaDto
+
+    ): Promise<void> {
+
+        /**
+         * ⚠️ Tu service actual todavía
+         * no recibe idProyecto.
+         */
+        await this.tareasService
+            .actualizarTarea(
+                id,
+                dto
+            );
+    }
+
+    /**
+     * =====================================================
+     * ELIMINAR TAREA
+     * =====================================================
+     */
+    @Delete(':id')
+
+    @HttpCode(HttpStatus.NO_CONTENT)
+
+    @ApiOperation({
+        summary:
+            'Eliminar una tarea'
+    })
+
+    @ApiNoContentResponse({
+        description:
+            'Tarea eliminada correctamente'
+    })
+
+    async eliminarTarea(
+
+        @Param('idProyecto', ParseIntPipe)
+        idProyecto: number,
+
+        @Param('id', ParseIntPipe)
+        id: number
+
+    ): Promise<void> {
+
+        /**
+         * ⚠️ Tu service actual todavía
+         * no recibe idProyecto.
+         */
+        await this.tareasService
+            .eliminarTarea(id);
+    }
 }

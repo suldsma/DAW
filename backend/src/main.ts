@@ -1,80 +1,317 @@
+// BACKEND/SRC/MAIN.TS
+// ✅ VERSIÓN COMPLETA, SEGURA Y MEJORADA
+
+import {
+    BadRequestException,
+    Logger,
+    ValidationPipe,
+    VersioningType
+} from '@nestjs/common';
+
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, BadRequestException } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+
+import {
+    DocumentBuilder,
+    SwaggerModule
+} from '@nestjs/swagger';
+
 import helmet from 'helmet';
 
+import { AppModule } from './app.module';
+
 async function bootstrap() {
-    // Creamos la instancia con CORS habilitado dinámicamente
+
+    /**
+     * =====================================================
+     * LOGGER
+     * =====================================================
+     */
+    const logger = new Logger('Bootstrap');
+
+    /**
+     * =====================================================
+     * CREAR APP NEST
+     * =====================================================
+     */
     const app = await NestFactory.create(AppModule);
 
-    // 1. Configuración de CORS optimizada para Angular
+    /**
+     * =====================================================
+     * VARIABLES ENTORNO
+     * =====================================================
+     */
+    const port =
+        Number(process.env.PORT) || 3000;
+
+    const nodeEnv =
+        process.env.NODE_ENV || 'development';
+
+    /**
+     * =====================================================
+     * CORS
+     * =====================================================
+     * Soporta múltiples origins:
+     * CORS_ORIGIN=http://localhost:4200,http://localhost:5173
+     */
+    const corsOrigins = (
+        process.env.CORS_ORIGIN ||
+        'http://localhost:4200'
+    )
+        .split(',')
+        .map(origin => origin.trim());
+
     app.enableCors({
-        origin: (process.env.CORS_ORIGIN || 'http://localhost:4200').split(',').map(o => o.trim()),
+
+        origin: corsOrigins,
+
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        optionsSuccessStatus: 200,
+
+        methods: [
+            'GET',
+            'POST',
+            'PUT',
+            'PATCH',
+            'DELETE',
+            'OPTIONS'
+        ],
+
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Requested-With'
+        ],
+
+        exposedHeaders: [
+            'Authorization'
+        ],
+
+        optionsSuccessStatus: 200
     });
 
-    // 2. Seguridad: Headers HTTP (Configurado para no romper Swagger)
-    app.use(helmet({
-        contentSecurityPolicy: false, // Deshabilitado para que Swagger UI cargue sus scripts/estilos
-    }));
+    /**
+     * =====================================================
+     * SEGURIDAD HEADERS HTTP
+     * =====================================================
+     */
+    app.use(
 
-    // 3. Prefijo Global para la API (Opcional pero recomendado)
-    app.setGlobalPrefix('api/v1');
+        helmet({
 
-    // 4. Validación global de DTOs (Blindaje contra datos basura)
-    app.useGlobalPipes(
-        new ValidationPipe({
-            whitelist: true,               // Elimina propiedades que no estén en el DTO
-            forbidNonWhitelisted: true,    // Lanza error si hay propiedades no permitidas
-            transform: true,               // Convierte tipos automáticamente (ej: string a number en IDs)
-            transformOptions: {
-                enableImplicitConversion: true,
-            },
-            exceptionFactory: (errors) => {
-                const messages = errors.map(e => ({
-                    field: e.property,
-                    errors: Object.values(e.constraints || {})
-                }));
-                return new BadRequestException({
-                    statusCode: 400,
-                    message: 'Error de validación en los datos enviados',
-                    errors: messages
-                });
-            }
-        }),
+            /**
+             * Swagger necesita scripts inline
+             */
+            contentSecurityPolicy: false,
+
+            /**
+             * Protección adicional
+             */
+            crossOriginEmbedderPolicy: false
+        })
     );
 
-    // 5. Configuración de Swagger (Documentación Interactiva)
-    const config = new DocumentBuilder()
-        .setTitle('Sistema de Gestión de Proyectos - API')
-        .setDescription('Documentación oficial de la API para la gestión de clientes, proyectos y tareas.')
-        .setVersion('1.0.0')
-        .addBearerAuth() // Habilita el botón de "Authorize" para el JWT
-        .addTag('Gestión - Clientes')
-        .addTag('Gestión - Proyectos')
-        .addTag('Gestión - Tareas')
-        .addTag('Gestión - Estadísticas')
-        .addTag('Seguridad - Autenticación')
-        .build();
+    /**
+     * =====================================================
+     * PREFIJO GLOBAL API
+     * =====================================================
+     */
+    app.setGlobalPrefix('api');
 
-    const document = SwaggerModule.createDocument(app, config);
-    // La documentación estará en: http://localhost:3000/api/v1/docs
-    SwaggerModule.setup('api/v1/docs', app, document);
+    /**
+     * =====================================================
+     * VERSIONADO API
+     * =====================================================
+     * Resultado:
+     * /api/v1/clientes
+     */
+    app.enableVersioning({
 
-    const port = process.env.PORT || 3000;
+        type: VersioningType.URI,
+
+        defaultVersion: '1'
+    });
+
+    /**
+     * =====================================================
+     * VALIDACIÓN GLOBAL DTOs
+     * =====================================================
+     */
+    app.useGlobalPipes(
+
+        new ValidationPipe({
+
+            /**
+             * Eliminar propiedades extra
+             */
+            whitelist: true,
+
+            /**
+             * Lanzar error si llegan propiedades extra
+             */
+            forbidNonWhitelisted: true,
+
+            /**
+             * Transformar tipos automáticamente
+             */
+            transform: true,
+
+            transformOptions: {
+
+                enableImplicitConversion: true
+            },
+
+            /**
+             * Respuesta personalizada errores validación
+             */
+            exceptionFactory: (errors) => {
+
+                const formattedErrors =
+                    errors.map(error => ({
+
+                        field: error.property,
+
+                        errors: Object.values(
+                            error.constraints || {}
+                        )
+                    }));
+
+                return new BadRequestException({
+
+                    statusCode: 400,
+
+                    message:
+                        'Error de validación en los datos enviados',
+
+                    errors: formattedErrors
+                });
+            }
+        })
+    );
+
+    /**
+     * =====================================================
+     * SWAGGER
+     * =====================================================
+     */
+    const swaggerConfig =
+        new DocumentBuilder()
+
+            .setTitle(
+                'Sistema de Gestión de Proyectos - API'
+            )
+
+            .setDescription(
+                'API REST para gestión de clientes, proyectos, tareas, comentarios, estadísticas y auditoría.'
+            )
+
+            .setVersion('1.0.0')
+
+            /**
+             * JWT
+             */
+            .addBearerAuth(
+
+                {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                    description:
+                        'Ingresar token JWT'
+                },
+
+                'JWT-auth'
+            )
+
+            /**
+             * TAGS
+             */
+            .addTag('Seguridad - Autenticación')
+
+            .addTag('Gestión - Clientes')
+
+            .addTag('Gestión - Proyectos')
+
+            .addTag('Gestión - Tareas')
+
+            .addTag('Gestión - Comentarios')
+
+            .addTag('Gestión - Estadísticas')
+
+            .addTag('Auditoría')
+
+            .build();
+
+    /**
+     * =====================================================
+     * GENERAR DOCUMENTO SWAGGER
+     * =====================================================
+     */
+    const swaggerDocument =
+        SwaggerModule.createDocument(
+            app,
+            swaggerConfig
+        );
+
+    /**
+     * =====================================================
+     * SWAGGER ENDPOINT
+     * =====================================================
+     * URL:
+     * http://localhost:3000/api/docs
+     */
+    SwaggerModule.setup(
+        'api/docs',
+        app,
+        swaggerDocument,
+        {
+            swaggerOptions: {
+
+                persistAuthorization: true
+            }
+        }
+    );
+
+    /**
+     * =====================================================
+     * LEVANTAR SERVIDOR
+     * =====================================================
+     */
     await app.listen(port);
 
-    console.log(`---`);
-    console.log(`🚀 Servidor listo en: http://localhost:${port}/api/v1`);
-    console.log(`📘 Swagger Docs: http://localhost:${port}/api/v1/docs`);
-    console.log(`---`);
+    /**
+     * =====================================================
+     * LOGS INICIO
+     * =====================================================
+     */
+    logger.log('========================================');
+    logger.log(
+        `🚀 Servidor iniciado correctamente`
+    );
+    logger.log(
+        `🌍 Ambiente: ${nodeEnv}`
+    );
+    logger.log(
+        `📡 API: http://localhost:${port}/api/v1`
+    );
+    logger.log(
+        `📘 Swagger: http://localhost:${port}/api/docs`
+    );
+    logger.log('========================================');
 }
 
-bootstrap().catch(err => {
-    console.error('❌ Error crítico al iniciar el servidor:', err);
+/**
+ * =====================================================
+ * BOOTSTRAP ERROR HANDLER
+ * =====================================================
+ */
+bootstrap().catch(error => {
+
+    const logger =
+        new Logger('Bootstrap');
+
+    logger.error(
+        '❌ Error crítico al iniciar la aplicación',
+        error
+    );
+
     process.exit(1);
 });

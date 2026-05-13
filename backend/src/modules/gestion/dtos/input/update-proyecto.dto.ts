@@ -1,31 +1,74 @@
 // BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/UPDATE-PROYECTO.DTO.TS
-import { ApiProperty, PartialType } from "@nestjs/swagger";
+// ✅ VERSIÓN CORREGIDA Y MEJORADA
+
+import {
+    ApiProperty,
+    PartialType
+} from "@nestjs/swagger";
+
+import {
+    IsEnum,
+    IsOptional,
+    IsNumber
+} from "class-validator";
+
+import { Type } from "class-transformer";
+
+// DTO base
 import { CreateProyectoDto } from "./create-proyecto.dto";
-import { IsEnum, IsOptional, IsNumber } from "class-validator";
+
+// Enum
 import { EstadosProyectosEnum } from "../../enums/estados-proyectos.enum";
 
-// Usamos PartialType para que los campos de creación sean opcionales aquí
-export class UpdateProyectoDto extends PartialType(CreateProyectoDto) {
+/**
+ * =====================================================
+ * UPDATE PROYECTO DTO
+ * =====================================================
+ * Todos los campos heredados desde CreateProyectoDto
+ * pasan a ser opcionales automáticamente.
+ */
+export class UpdateProyectoDto extends PartialType(
+    CreateProyectoDto
+) {
 
-    // Para cambiar el estado del proyecto
+    /**
+     * =====================================================
+     * ESTADO
+     * =====================================================
+     */
     @ApiProperty({
         enum: EstadosProyectosEnum,
         example: EstadosProyectosEnum.ACTIVO,
         description: 'Nuevo estado del proyecto',
         required: false
     })
-    @IsEnum(EstadosProyectosEnum)
     @IsOptional()
+    @IsEnum(
+        EstadosProyectosEnum,
+        {
+            message: 'Estado de proyecto inválido'
+        }
+    )
     estado?: EstadosProyectosEnum;
 
-    // Por si queremos mover el proyecto a otro cliente
+    /**
+     * =====================================================
+     * ID CLIENTE
+     * =====================================================
+     */
     @ApiProperty({
         example: 2,
-        description: 'ID del nuevo cliente (opcional)',
-        required: false
+        description: 'ID del nuevo cliente asociado',
+        required: false,
+        nullable: true
     })
-    @IsNumber()
     @IsOptional()
-    idCliente?: number; 
-
+    @Type(() => Number)
+    @IsNumber(
+        {},
+        {
+            message: 'El ID del cliente debe ser un número'
+        }
+    )
+    idCliente?: number;
 }

@@ -1,38 +1,135 @@
 // BACKEND/SRC/MODULES/GESTION/ENTITIES/PROYECTO.ENTITY.TS
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+// ✅ VERSIÓN CORREGIDA Y MEJORADA
+
+import {
+    Column,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    CreateDateColumn,
+    UpdateDateColumn,
+    Index
+} from "typeorm";
+
+// Enums
 import { EstadosProyectosEnum } from "../enums/estados-proyectos.enum";
+
+// Entidades relacionadas
 import { Cliente } from "./cliente.entity";
 import { Tarea } from "./tarea.entity";
 
 @Entity({ name: "proyectos" })
 export class Proyecto {
 
-    // ID del proyecto
+    /**
+     * =====================================================
+     * ID
+     * =====================================================
+     */
     @PrimaryGeneratedColumn()
     id!: number;
 
-    // Nombre del proyecto (no se puede repetir)
-    @Column({ unique: true }) 
+    /**
+     * =====================================================
+     * NOMBRE
+     * =====================================================
+     * Nombre único del proyecto
+     */
+    @Index('IDX_PROYECTO_NOMBRE_UNICO', { unique: true })
+    @Column({
+        type: 'varchar',
+        length: 150,
+        unique: true
+    })
     nombre!: string;
 
-    // Estado actual del proyecto (por defecto Activo)
-    @Column({ 
-        type: 'enum', 
+    /**
+     * =====================================================
+     * ESTADO
+     * =====================================================
+     */
+    @Column({
+        type: 'enum',
         enum: EstadosProyectosEnum,
-        default: EstadosProyectosEnum.ACTIVO 
+        default: EstadosProyectosEnum.ACTIVO
     })
     estado!: EstadosProyectosEnum;
 
-    // FK del cliente, puede ser null si es un proyecto interno
-    @Column({ name: "id_cliente", nullable: true }) 
-    idCliente?: number;
+    /**
+     * =====================================================
+     * FOREIGN KEY CLIENTE
+     * =====================================================
+     * Puede ser null para proyectos internos
+     */
+    @Column({
+        name: "id_cliente",
+        type: 'int',
+        nullable: true
+    })
+    idCliente?: number | null;
 
-    // Relación con la tabla de clientes
-    @ManyToOne(() => Cliente, (cliente) => cliente.proyectos, { nullable: true })
-    @JoinColumn({ name: "id_cliente" })
-    cliente?: Cliente;
+    /**
+     * =====================================================
+     * RELACIÓN CLIENTE
+     * =====================================================
+     */
+    @ManyToOne(
+        () => Cliente,
+        (cliente) => cliente.proyectos,
+        {
+            nullable: true,
 
-    // Un proyecto tiene muchas tareas asociadas
-    @OneToMany(() => Tarea, (tarea) => tarea.proyecto, { cascade: true })
+            /**
+             * Si eliminan cliente:
+             * NO borrar proyectos automáticamente
+             */
+            onDelete: 'SET NULL',
+
+            /**
+             * Si cambia ID cliente
+             */
+            onUpdate: 'CASCADE',
+
+            eager: false
+        }
+    )
+    @JoinColumn({
+        name: "id_cliente"
+    })
+    cliente?: Cliente | null;
+
+    /**
+     * =====================================================
+     * RELACIÓN TAREAS
+     * =====================================================
+     */
+    @OneToMany(
+        () => Tarea,
+        (tarea) => tarea.proyecto,
+        {
+            cascade: false,
+            eager: false
+        }
+    )
     tareas!: Tarea[];
+
+    /**
+     * =====================================================
+     * FECHAS AUDITORÍA
+     * =====================================================
+     */
+
+    @CreateDateColumn({
+        name: 'fecha_creacion',
+        type: 'timestamp'
+    })
+    fechaCreacion!: Date;
+
+    @UpdateDateColumn({
+        name: 'fecha_actualizacion',
+        type: 'timestamp'
+    })
+    fechaActualizacion!: Date;
 }

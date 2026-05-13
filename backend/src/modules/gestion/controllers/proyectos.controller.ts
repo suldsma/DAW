@@ -1,117 +1,301 @@
 // BACKEND/SRC/MODULES/GESTION/CONTROLLERS/PROYECTOS.CONTROLLER.TS
-import { 
-    Body, 
-    Controller, 
-    Get, 
-    Param, 
-    ParseIntPipe, 
-    Post, 
-    Put, 
-    Query, 
-    UseGuards, 
+// ✅ VERSIÓN MEJORADA Y PROFESIONAL
+
+import {
+    Body,
+    Controller,
     Delete,
+    Get,
     HttpCode,
-    HttpStatus
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    Query,
+    UseGuards
 } from "@nestjs/common";
+
+import {
+    ApiBadRequestResponse,
+    ApiBearerAuth,
+    ApiCreatedResponse,
+    ApiNoContentResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiQuery,
+    ApiTags,
+    ApiUnauthorizedResponse
+} from "@nestjs/swagger";
+
+// DTOs INPUT
 import { CreateProyectoDto } from "../dtos/input/create-proyecto.dto";
 import { UpdateProyectoDto } from "../dtos/input/update-proyecto.dto";
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiQuery, ApiCreatedResponse } from "@nestjs/swagger";
+
+// DTOs OUTPUT
 import { ListProyectoDTO } from "../dtos/output/list-proyecto.dto";
 import { ProyectoDTO } from "../dtos/output/proyecto.dto";
+
+// Services
 import { ProyectosService } from "../services/proyectos.service";
+
+// Auth
 import { AuthGuard } from "../../auth/guards/auth.guard";
+
+// Enums
 import { EstadosProyectosEnum } from "../enums/estados-proyectos.enum";
 
 @ApiTags('Proyectos')
+
 @ApiBearerAuth()
-@UseGuards(AuthGuard) 
+
+/**
+ * Protección JWT global
+ */
+@UseGuards(AuthGuard)
+
 @Controller('gestion/proyectos')
 export class ProyectosController {
 
-    constructor(private readonly proyectosService: ProyectosService) { }
+    constructor(
+        private readonly proyectosService: ProyectosService
+    ) { }
 
     /**
-     * POST: Crear un nuevo proyecto
+     * =====================================================
+     * CREAR PROYECTO
+     * =====================================================
      */
     @Post()
+
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Crear un nuevo proyecto' })
-    @ApiCreatedResponse({ 
-        description: 'Proyecto creado exitosamente',
-        schema: { example: { id: 1 } }
+
+    @ApiOperation({
+        summary: 'Crear un nuevo proyecto'
     })
-    async crearProyecto(@Body() dto: CreateProyectoDto): Promise<{ id: number }> {
-        return await this.proyectosService.crearProyecto(dto);
+
+    @ApiCreatedResponse({
+        description: 'Proyecto creado exitosamente',
+        schema: {
+            example: {
+                id: 1
+            }
+        }
+    })
+
+    @ApiBadRequestResponse({
+        description: 'Datos inválidos'
+    })
+
+    @ApiUnauthorizedResponse({
+        description: 'No autorizado'
+    })
+
+    async crearProyecto(
+        @Body() dto: CreateProyectoDto
+    ): Promise<{ id: number }> {
+
+        return await this.proyectosService
+            .crearProyecto(dto);
     }
 
     /**
-     * PUT: Actualizar un proyecto existente
-     */
-    @Put(':id')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Actualizar un proyecto existente' })
-    async actualizarProyecto(
-        @Param('id', ParseIntPipe) id: number, 
-        @Body() dto: UpdateProyectoDto
-    ): Promise<void> {
-        await this.proyectosService.actualizarProyecto(id, dto);
-    }
-
-    /**
-     * GET: Listar todos los proyectos con filtros de búsqueda avanzada
-     * ⚠️ IMPORTANTE: Este endpoint debe estar ANTES que GET ':id'
-     * Si no, Angular trata 'exportar' como un ID numérico
+     * =====================================================
+     * EXPORTAR CSV
+     * =====================================================
+     * IMPORTANTE:
+     * Debe ir antes de GET(':id')
      */
     @Get('exportar/csv')
-    @ApiOperation({ summary: 'Exportar lista de proyectos a CSV' })
+
+    @ApiOperation({
+        summary: 'Exportar lista de proyectos a CSV'
+    })
+
+    @ApiOkResponse({
+        description: 'CSV generado correctamente'
+    })
+
     async exportarCSV() {
-        const proyectos = await this.proyectosService.obtenerProyectos();
-        
-        const encabezado = "ID;Nombre;Estado;Cliente\n";
-        const filas = proyectos.map(p => 
-            `${p.id};${p.nombre};${p.estado};${p.cliente?.nombre || 'Interno'}`
-        ).join("\n");
-        
-        return { 
+
+        const proyectos =
+            await this.proyectosService.obtenerProyectos();
+
+        const encabezado =
+            'ID;Nombre;Estado;Cliente\n';
+
+        const filas = proyectos.map(p => {
+
+            const nombre =
+                p.nombre.replace(/[;\n\r]/g, '');
+
+            const cliente =
+                (p.cliente?.nombre || 'Interno')
+                    .replace(/[;\n\r]/g, '');
+
+            return `${p.id};${nombre};${p.estado};${cliente}`;
+
+        }).join('\n');
+
+        return {
+
             data: encabezado + filas,
-            filename: `reporte_proyectos_${new Date().getTime()}.csv`,
+
+            filename:
+                `reporte_proyectos_${Date.now()}.csv`,
+
             contentType: 'text/csv'
         };
     }
 
     /**
-     * GET: Listar proyectos con filtros
+     * =====================================================
+     * LISTAR PROYECTOS
+     * =====================================================
      */
     @Get()
-    @ApiOperation({ summary: 'Listar proyectos con filtros de búsqueda avanzada' })
-    @ApiOkResponse({ type: ListProyectoDTO, isArray: true })
-    @ApiQuery({ name: 'estado', required: false, enum: EstadosProyectosEnum })
-    @ApiQuery({ name: 'nombre', required: false, type: String, description: 'Filtro por nombre de proyecto' })
+
+    @ApiOperation({
+        summary:
+            'Listar proyectos con filtros opcionales'
+    })
+
+    @ApiOkResponse({
+        type: ListProyectoDTO,
+        isArray: true
+    })
+
+    @ApiQuery({
+        name: 'estado',
+        required: false,
+        enum: EstadosProyectosEnum
+    })
+
+    @ApiQuery({
+        name: 'nombre',
+        required: false,
+        type: String,
+        description:
+            'Filtro parcial por nombre'
+    })
+
     async obtenerProyectos(
-        @Query("nombre") nombre?: string,
-        @Query("estado") estado?: EstadosProyectosEnum
+
+        @Query('nombre')
+        nombre?: string,
+
+        @Query('estado')
+        estado?: EstadosProyectosEnum
+
     ): Promise<ListProyectoDTO[]> {
-        return await this.proyectosService.obtenerProyectos(nombre, estado);
+
+        return await this.proyectosService
+            .obtenerProyectos(nombre, estado);
     }
 
     /**
-     * GET: Obtener detalle de un proyecto (incluye tareas)
-     * ⚠️ Este endpoint DEBE estar después de los GET específicos
+     * =====================================================
+     * OBTENER PROYECTO POR ID
+     * =====================================================
      */
     @Get(':id')
-    @ApiOperation({ summary: 'Obtener detalle de proyecto incluyendo sus tareas' })
-    @ApiOkResponse({ type: ProyectoDTO })
-    async obtenerProyecto(@Param('id', ParseIntPipe) id: number): Promise<ProyectoDTO> {
-        return await this.proyectosService.obtenerProyecto(id);
+
+    @ApiOperation({
+        summary:
+            'Obtener detalle completo de un proyecto'
+    })
+
+    @ApiOkResponse({
+        type: ProyectoDTO
+    })
+
+    @ApiNotFoundResponse({
+        description:
+            'Proyecto no encontrado'
+    })
+
+    async obtenerProyecto(
+
+        @Param('id', ParseIntPipe)
+        id: number
+
+    ): Promise<ProyectoDTO> {
+
+        return await this.proyectosService
+            .obtenerProyecto(id);
     }
 
     /**
-     * DELETE: Eliminar (dar de baja) un proyecto
+     * =====================================================
+     * ACTUALIZAR PROYECTO
+     * =====================================================
+     */
+    @Put(':id')
+
+    @HttpCode(HttpStatus.NO_CONTENT)
+
+    @ApiOperation({
+        summary:
+            'Actualizar un proyecto existente'
+    })
+
+    @ApiNoContentResponse({
+        description:
+            'Proyecto actualizado correctamente'
+    })
+
+    @ApiNotFoundResponse({
+        description:
+            'Proyecto no encontrado'
+    })
+
+    async actualizarProyecto(
+
+        @Param('id', ParseIntPipe)
+        id: number,
+
+        @Body()
+        dto: UpdateProyectoDto
+
+    ): Promise<void> {
+
+        await this.proyectosService
+            .actualizarProyecto(id, dto);
+    }
+
+    /**
+     * =====================================================
+     * ELIMINAR PROYECTO
+     * =====================================================
      */
     @Delete(':id')
+
     @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Dar de baja un proyecto (borrado lógico)' })
-    async eliminarProyecto(@Param('id', ParseIntPipe) id: number): Promise<void> {
-        await this.proyectosService.eliminarProyecto(id);
+
+    @ApiOperation({
+        summary:
+            'Dar de baja un proyecto'
+    })
+
+    @ApiNoContentResponse({
+        description:
+            'Proyecto eliminado correctamente'
+    })
+
+    @ApiNotFoundResponse({
+        description:
+            'Proyecto no encontrado'
+    })
+
+    async eliminarProyecto(
+
+        @Param('id', ParseIntPipe)
+        id: number
+
+    ): Promise<void> {
+
+        await this.proyectosService
+            .eliminarProyecto(id);
     }
 }

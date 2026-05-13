@@ -1,73 +1,169 @@
-import { 
-    CanActivate, 
-    ExecutionContext, 
-    Injectable, 
-    UnauthorizedException 
+// BACKEND/SRC/MODULES/AUTH/GUARDS/AUTH.GUARD.TS
+// ✅ VERSIÓN MEJORADA Y PROFESIONAL
+
+import {
+    CanActivate,
+    ExecutionContext,
+    Injectable,
+    UnauthorizedException
 } from "@nestjs/common";
+
 import { JwtService } from "@nestjs/jwt";
-import { Request } from 'express';
+
+import { Request } from "express";
+
 import { UsuariosService } from "../services/usuarios.service";
+
+/**
+ * ✅ Interface personalizada para tipar request.user
+ * Mejora autocompletado y evita usar request['user']
+ */
+interface AuthenticatedRequest extends Request {
+    user: {
+        sub: number;
+        nombre: string;
+        estado: string;
+    };
+}
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+
     constructor(
         private readonly jwtService: JwtService,
         private readonly usuariosService: UsuariosService
     ) { }
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<Request>();
+    /**
+     * Método principal del Guard
+     * Verifica:
+     * - Existencia del token
+     * - Validez del JWT
+     * - Existencia del usuario
+     * - Estado ACTIVO del usuario
+     */
+    async canActivate(
+        context: ExecutionContext
+    ): Promise<boolean> {
+
+        const request = context
+            .switchToHttp()
+            .getRequest<AuthenticatedRequest>();
+
+        // Extraer token Bearer
         const token = this.extractTokenFromHeader(request);
-        
+
+        // Validar existencia del token
         if (!token) {
-            throw new UnauthorizedException('Acceso denegado: No se proporcionó un token Bearer');
+            throw new UnauthorizedException(
+                'Acceso denegado: No se proporcionó un token Bearer'
+            );
         }
-        
+
         try {
-            // 1. Verificar la integridad y expiración del token
+
+            /**
+             * =====================================================
+             * 1. VALIDAR JWT
+             * =====================================================
+             * Verifica:
+             * - Firma
+             * - Integridad
+             * - Expiración
+             */
             const payload = await this.jwtService.verifyAsync(token);
-            
-            // 2. Validar existencia y estado del usuario en la Base de Datos
-            // Esto cumple con la consigna de acceso restringido y usuarios activos
-            const usuario = await this.usuariosService.buscarPorId(payload.sub);
-            
+
+            /**
+             * =====================================================
+             * 2. VALIDAR USUARIO EN BASE DE DATOS
+             * =====================================================
+             * No confiar únicamente en el token.
+             * Verificar:
+             * - Que el usuario exista
+             * - Que siga ACTIVO
+             */
+            const usuario = await this.usuariosService.buscarPorId(
+                payload.sub
+            );
+
+            // Usuario inexistente
             if (!usuario) {
-                throw new UnauthorizedException('El usuario vinculado al token ya no existe');
+                throw new UnauthorizedException(
+                    'El usuario vinculado al token ya no existe'
+                );
             }
 
-            // Según el Script_BD.sql y las reglas de negocio, validamos el estado
+            // Usuario inactivo
             if (usuario.estado !== 'ACTIVO') {
-                throw new UnauthorizedException('Cuenta de usuario inhabilitada o dada de baja');
+                throw new UnauthorizedException(
+                    'Cuenta de usuario inhabilitada o dada de baja'
+                );
             }
 
             /**
-             * IMPORTANTE: Adjuntamos la información al objeto Request.
-             * Esto permite que el decorador @GetUser() extraiga los datos 
-             * necesarios para el HistorialCambiosService (usuarioId y nombre).
+             * =====================================================
+             * 3. GUARDAR USUARIO EN REQUEST
+             * =====================================================
+             * Disponible luego en:
+             * - Controllers
+             * - Decoradores personalizados
+             * - Auditoría
+             * - Servicios
              */
-            request['user'] = {
+            request.user = {
                 sub: usuario.id,
                 nombre: usuario.nombre,
-                // Puedes agregar más datos del perfil si el frontend los necesita
+                estado: usuario.estado
             };
 
         } catch (error) {
-            // Si es un error de Unauthorized propio lo relanzamos, sino es un error de JWT
-            if (error instanceof UnauthorizedException) throw error;
-            throw new UnauthorizedException('Token inválido, expirado o malformado');
+
+            /**
+             * Si ya es UnauthorizedException personalizada
+             * la relanzamos.
+             */
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+
+            /**
+             * Error JWT:
+             * - Token expirado
+             * - Firma inválida
+             * - Token corrupto
+             */
+            throw new UnauthorizedException(
+                'Token inválido, expirado o malformado'
+            );
         }
 
         return true;
     }
 
     /**
-     * Extrae el token del encabezado Authorization: Bearer <token>
+     * =====================================================
+     * EXTRAER TOKEN BEARER
+     * =====================================================
+     * Formato esperado:
+     * Authorization: Bearer <token>
      */
-    private extractTokenFromHeader(request: Request): string | undefined {
+    private extractTokenFromHeader(
+        request: Request
+    ): string | undefined {
+
         const authHeader = request.headers.authorization;
-        if (!authHeader) return undefined;
+
+        // Header inexistente
+        if (!authHeader) {
+            return undefined;
+        }
 
         const [type, token] = authHeader.split(' ');
-        return type === 'Bearer' ? token : undefined;
+
+        // Validar formato Bearer
+        return type === 'Bearer'
+            ? token
+            : undefined;
     }
+
 }

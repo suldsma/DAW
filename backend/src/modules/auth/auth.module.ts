@@ -1,49 +1,136 @@
-import { Module, Global } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { JwtModule } from "@nestjs/jwt";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+// BACKEND/SRC/MODULES/AUTH/AUTH.MODULE.TS
+// ✅ VERSIÓN CORREGIDA Y MEJORADA
 
-// Entidades y Servicios
+import {
+    Module,
+    Global
+} from "@nestjs/common";
+
+import { TypeOrmModule } from "@nestjs/typeorm";
+
+import { JwtModule } from "@nestjs/jwt";
+
+import {
+    ConfigModule,
+    ConfigService
+} from "@nestjs/config";
+
+// Entidades
 import { Usuario } from "./entitites/usuario.entity";
+
+// Servicios
 import { UsuariosService } from "./services/usuarios.service";
 import { AuthService } from "./services/auth.service";
 
-// Controladores y Seguridad
+// Controllers
 import { AuthController } from "./controllers/auth.controller";
+
+// Guards
 import { AuthGuard } from "./guards/auth.guard";
 
-@Global() // Hacemos que el módulo sea global para no tener que importarlo en cada módulo de gestión
+@Global()
 @Module({
     imports: [
-        // Registro de la entidad Usuario para acceso a la tabla usuarios de la DB
-        TypeOrmModule.forFeature([Usuario]),
-        
-        // Configuración asíncrona del JWT usando variables de entorno
+
+        /**
+         * =====================================================
+         * TYPEORM
+         * =====================================================
+         * Registro de entidad Usuario
+         */
+        TypeOrmModule.forFeature([
+            Usuario
+        ]),
+
+        /**
+         * =====================================================
+         * JWT MODULE
+         * =====================================================
+         * Configuración segura usando .env
+         */
         JwtModule.registerAsync({
+
             imports: [ConfigModule],
+
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                global: true,
-                secret: configService.get<string>('JWT_SECRET') || 'CLAVE_SECRETA_POR_DEFECTO',
-                signOptions: { 
-                    expiresIn: '8h',
-                    algorithm: 'HS256'
-                },
-            }),
-        }),
+
+            useFactory: (
+                configService: ConfigService
+            ) => {
+
+                /**
+                 * Obtener JWT_SECRET desde variables de entorno
+                 */
+                const jwtSecret =
+                    configService.get<string>('JWT_SECRET');
+
+                /**
+                 * Validación adicional de seguridad
+                 */
+                if (!jwtSecret) {
+                    throw new Error(
+                        'JWT_SECRET no está definido en el archivo .env'
+                    );
+                }
+
+                return {
+
+                    /**
+                     * Clave secreta JWT
+                     */
+                    secret: jwtSecret,
+
+                    /**
+                     * Configuración del token
+                     */
+                    signOptions: {
+
+                        /**
+                         * Duración del token
+                         */
+                        expiresIn: '8h',
+
+                        /**
+                         * Algoritmo de firma
+                         */
+                        algorithm: 'HS256'
+                    }
+                };
+            }
+        })
     ],
-    controllers: [AuthController],
+
+    /**
+     * =====================================================
+     * CONTROLLERS
+     * =====================================================
+     */
+    controllers: [
+        AuthController
+    ],
+
+    /**
+     * =====================================================
+     * PROVIDERS
+     * =====================================================
+     */
     providers: [
-        UsuariosService, 
-        AuthService, 
+        UsuariosService,
+        AuthService,
         AuthGuard
     ],
-    // Exportamos JwtModule y AuthGuard para que estén disponibles en toda la app
+
+    /**
+     * =====================================================
+     * EXPORTS
+     * =====================================================
+     * Disponibles globalmente
+     */
     exports: [
-        AuthGuard, 
-        AuthService, 
+        AuthGuard,
+        AuthService,
         UsuariosService,
         JwtModule
-    ],
+    ]
 })
 export class AuthModule { }

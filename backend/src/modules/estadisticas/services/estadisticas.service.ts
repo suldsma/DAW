@@ -1,15 +1,24 @@
 // BACKEND/SRC/MODULES/ESTADISTICAS/SERVICES/ESTADISTICAS.SERVICE.TS
+
 import { Injectable } from '@nestjs/common';
+
+import { InjectRepository } from '@nestjs/typeorm';
+
+import { Repository } from 'typeorm';
+
+// Servicios
 import { ClientesService } from '../../gestion/services/clientes.service';
 import { ProyectosService } from '../../gestion/services/proyectos.service';
 import { TareasService } from '../../gestion/services/tarea.service';
-import { EstadosProyectosEnum } from '../../gestion/enums/estados-proyectos.enum';
-import { EstadosTareasEnum } from '../../gestion/enums/estados-tareas.enum';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
+// Entidades
 import { Proyecto } from '../../gestion/entities/proyecto.entity';
 import { Tarea } from '../../gestion/entities/tarea.entity';
 import { Cliente } from '../../gestion/entities/cliente.entity';
+
+// Enums
+import { EstadosProyectosEnum } from '../../gestion/enums/estados-proyectos.enum';
+import { EstadosTareasEnum } from '../../gestion/enums/estados-tareas.enum';
 
 @Injectable()
 export class EstadisticasService {
@@ -18,18 +27,24 @@ export class EstadisticasService {
         private readonly clientesService: ClientesService,
         private readonly proyectosService: ProyectosService,
         private readonly tareasService: TareasService,
+
         @InjectRepository(Proyecto)
         private readonly proyectoRepository: Repository<Proyecto>,
+
         @InjectRepository(Tarea)
         private readonly tareaRepository: Repository<Tarea>,
+
         @InjectRepository(Cliente)
         private readonly clienteRepository: Repository<Cliente>,
     ) { }
 
     /**
-     * ✅ MEJORADO: Resumen general más detallado
+     * =====================================================
+     * RESUMEN GENERAL
+     * =====================================================
      */
     async obtenerResumenGeneral() {
+
         const [
             totalClientes,
             clientesActivos,
@@ -38,128 +53,272 @@ export class EstadisticasService {
             tareasPendientes,
             tareasFinalizadas
         ] = await Promise.all([
+
             this.clientesService.contarClientesTotales(),
+
             this.clientesService.contarClientesActivos(),
-            this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.ACTIVO),
-            this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.FINALIZADO),
-            this.tareasService.contarTareasPorEstado(EstadosTareasEnum.PENDIENTE),
-            this.tareasService.contarTareasPorEstado(EstadosTareasEnum.FINALIZADA),
+
+            this.proyectosService.contarProyectosPorEstado(
+                EstadosProyectosEnum.ACTIVO
+            ),
+
+            this.proyectosService.contarProyectosPorEstado(
+                EstadosProyectosEnum.FINALIZADO
+            ),
+
+            this.tareasService.contarTareasPorEstado(
+                EstadosTareasEnum.PENDIENTE
+            ),
+
+            this.tareasService.contarTareasPorEstado(
+                EstadosTareasEnum.FINALIZADA
+            )
         ]);
 
-        const porcentajeProyectosFinalizados = proyectosActivos + proyectosFinalizados > 0
-            ? Math.round((proyectosFinalizados / (proyectosActivos + proyectosFinalizados)) * 100)
-            : 0;
+        /**
+         * Porcentaje proyectos finalizados
+         */
+        const totalProyectos =
+            proyectosActivos + proyectosFinalizados;
 
-        const porcentajeTareasCompletadas = tareasPendientes + tareasFinalizadas > 0
-            ? Math.round((tareasFinalizadas / (tareasPendientes + tareasFinalizadas)) * 100)
-            : 0;
+        const porcentajeProyectosFinalizados =
+            totalProyectos > 0
+                ? Math.round(
+                    (proyectosFinalizados / totalProyectos) * 100
+                )
+                : 0;
+
+        /**
+         * Porcentaje tareas completadas
+         */
+        const totalTareas =
+            tareasPendientes + tareasFinalizadas;
+
+        const porcentajeTareasCompletadas =
+            totalTareas > 0
+                ? Math.round(
+                    (tareasFinalizadas / totalTareas) * 100
+                )
+                : 0;
 
         return {
+
             resumen: {
                 totalClientes,
                 clientesActivos,
                 proyectosActivos,
                 proyectosFinalizados,
                 tareasPendientes,
-                tareasFinalizadas,
+                tareasFinalizadas
             },
+
             porcentajes: {
-                proyectosFinalizados: porcentajeProyectosFinalizados,
-                tareasCompletadas: porcentajeTareasCompletadas,
+                proyectosFinalizados:
+                    porcentajeProyectosFinalizados,
+
+                tareasCompletadas:
+                    porcentajeTareasCompletadas
             },
-            fechaReporte: new Date().toISOString(),
+
+            fechaReporte: new Date().toISOString()
         };
     }
 
     /**
-     * ✅ NUEVA: Estadísticas por cliente
+     * =====================================================
+     * ESTADÍSTICAS POR CLIENTE
+     * =====================================================
      */
     async obtenerEstadisticasPorCliente() {
+
+        /**
+         * ⚡ Optimizado:
+         * cargar proyectos y tareas juntos
+         */
         const clientes = await this.clienteRepository.find({
-            relations: ['proyectos'],
+            relations: [
+                'proyectos',
+                'proyectos.tareas'
+            ],
+            order: {
+                nombre: 'ASC'
+            }
         });
 
-        return await Promise.all(
-            clientes.map(async (cliente) => {
-                const proyectos = await this.proyectoRepository.find({
-                    where: { idCliente: cliente.id },
-                });
+        return clientes.map(cliente => {
 
-                const tareasPromise = proyectos.length > 0
-                    ? this.tareaRepository.createQueryBuilder('tarea')
-                        .innerJoin('tarea.proyecto', 'proyecto')
-                        .where('proyecto.id_cliente = :idCliente', { idCliente: cliente.id })
-                        .getMany()
-                    : Promise.resolve([]);
+            const proyectos = cliente.proyectos ?? [];
 
-                const tareas = await tareasPromise;
-
-                return {
-                    clienteId: cliente.id,
-                    clienteNombre: cliente.nombre,
-                    cantidadProyectos: proyectos.length,
-                    proyectosActivos: proyectos.filter(p => p.estado === EstadosProyectosEnum.ACTIVO).length,
-                    cantidadTareas: tareas.length,
-                    tareasCompletadas: tareas.filter(t => t.estado === EstadosTareasEnum.FINALIZADA).length,
-                    tareasEnProgreso: tareas.filter(t => t.estado === EstadosTareasEnum.PENDIENTE).length,
-                };
-            })
-        );
-    }
-
-    /**
-     * ✅ NUEVA: Estadísticas detalladas por proyecto
-     */
-    async obtenerEstadisticasPorProyecto() {
-        const proyectos = await this.proyectoRepository.find({
-            relations: ['tareas', 'cliente'],
-        });
-
-        return proyectos.map((proyecto) => {
-            const tareasPendientes = proyecto.tareas.filter(
-                t => t.estado === EstadosTareasEnum.PENDIENTE
-            ).length;
-            const tareasFinalizadas = proyecto.tareas.filter(
-                t => t.estado === EstadosTareasEnum.FINALIZADA
-            ).length;
-
-            const porcentajeCompletado = proyecto.tareas.length > 0
-                ? Math.round((tareasFinalizadas / proyecto.tareas.length) * 100)
-                : 0;
+            const tareas = proyectos.flatMap(
+                proyecto => proyecto.tareas ?? []
+            );
 
             return {
-                proyectoId: proyecto.id,
-                proyectoNombre: proyecto.nombre,
-                estado: proyecto.estado,
-                cliente: proyecto.cliente?.nombre || 'Interno',
-                totalTareas: proyecto.tareas.length,
-                tareasPendientes,
-                tareasFinalizadas,
-                porcentajeCompletado,
+
+                clienteId: cliente.id,
+
+                clienteNombre: cliente.nombre,
+
+                cantidadProyectos:
+                    proyectos.length,
+
+                proyectosActivos:
+                    proyectos.filter(
+                        proyecto =>
+                            proyecto.estado ===
+                            EstadosProyectosEnum.ACTIVO
+                    ).length,
+
+                proyectosFinalizados:
+                    proyectos.filter(
+                        proyecto =>
+                            proyecto.estado ===
+                            EstadosProyectosEnum.FINALIZADO
+                    ).length,
+
+                cantidadTareas:
+                    tareas.length,
+
+                tareasPendientes:
+                    tareas.filter(
+                        tarea =>
+                            tarea.estado ===
+                            EstadosTareasEnum.PENDIENTE
+                    ).length,
+
+                tareasFinalizadas:
+                    tareas.filter(
+                        tarea =>
+                            tarea.estado ===
+                            EstadosTareasEnum.FINALIZADA
+                    ).length
             };
         });
     }
 
     /**
-     * ✅ NUEVA: Tareas próximas a completarse (más del 80% completadas)
+     * =====================================================
+     * ESTADÍSTICAS POR PROYECTO
+     * =====================================================
      */
-    async obtenerProyectosProximosACompletarse() {
-        const estadisticas = await this.obtenerEstadisticasPorProyecto();
-        
-        return estadisticas
-            .filter(e => e.porcentajeCompletado >= 80 && e.estado === EstadosProyectosEnum.ACTIVO)
-            .sort((a, b) => b.porcentajeCompletado - a.porcentajeCompletado);
+    async obtenerEstadisticasPorProyecto() {
+
+        const proyectos =
+            await this.proyectoRepository.find({
+
+                relations: [
+                    'cliente',
+                    'tareas'
+                ],
+
+                order: {
+                    nombre: 'ASC'
+                }
+            });
+
+        return proyectos.map(proyecto => {
+
+            const tareas =
+                proyecto.tareas ?? [];
+
+            const tareasPendientes =
+                tareas.filter(
+                    tarea =>
+                        tarea.estado ===
+                        EstadosTareasEnum.PENDIENTE
+                ).length;
+
+            const tareasFinalizadas =
+                tareas.filter(
+                    tarea =>
+                        tarea.estado ===
+                        EstadosTareasEnum.FINALIZADA
+                ).length;
+
+            const porcentajeCompletado =
+                tareas.length > 0
+                    ? Math.round(
+                        (
+                            tareasFinalizadas /
+                            tareas.length
+                        ) * 100
+                    )
+                    : 0;
+
+            return {
+
+                proyectoId:
+                    proyecto.id,
+
+                proyectoNombre:
+                    proyecto.nombre,
+
+                estado:
+                    proyecto.estado,
+
+                cliente:
+                    proyecto.cliente?.nombre ??
+                    'Interno',
+
+                totalTareas:
+                    tareas.length,
+
+                tareasPendientes,
+
+                tareasFinalizadas,
+
+                porcentajeCompletado
+            };
+        });
     }
 
     /**
-     * ✅ NUEVA: Proyectos atrasados (muchas tareas pendientes)
+     * =====================================================
+     * PROYECTOS PRÓXIMOS A COMPLETARSE
+     * =====================================================
+     */
+    async obtenerProyectosProximosACompletarse() {
+
+        const estadisticas =
+            await this.obtenerEstadisticasPorProyecto();
+
+        return estadisticas
+            .filter(
+                proyecto =>
+                    proyecto.estado ===
+                    EstadosProyectosEnum.ACTIVO &&
+                    proyecto.porcentajeCompletado >= 80
+            )
+            .sort(
+                (a, b) =>
+                    b.porcentajeCompletado -
+                    a.porcentajeCompletado
+            );
+    }
+
+    /**
+     * =====================================================
+     * PROYECTOS ATRASADOS
+     * =====================================================
      */
     async obtenerProyectosAtrasados() {
-        const estadisticas = await this.obtenerEstadisticasPorProyecto();
-        
+
+        const estadisticas =
+            await this.obtenerEstadisticasPorProyecto();
+
         return estadisticas
-            .filter(e => e.porcentajeCompletado < 20 && e.totalTareas > 0 && e.estado === EstadosProyectosEnum.ACTIVO)
-            .sort((a, b) => a.porcentajeCompletado - b.porcentajeCompletado);
+            .filter(
+                proyecto =>
+                    proyecto.estado ===
+                    EstadosProyectosEnum.ACTIVO &&
+                    proyecto.totalTareas > 0 &&
+                    proyecto.porcentajeCompletado < 20
+            )
+            .sort(
+                (a, b) =>
+                    a.porcentajeCompletado -
+                    b.porcentajeCompletado
+            );
     }
 
 }

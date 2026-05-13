@@ -1,29 +1,118 @@
 // BACKEND/SRC/MODULES/GESTION/ENTITIES/CLIENTE.ENTITY.TS
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+
+import {
+    Column,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    CreateDateColumn,
+    UpdateDateColumn,
+    Index
+} from "typeorm";
+
+// ======================================================
+// ENUMS
+// ======================================================
+
 import { EstadosClientesEnum } from "../enums/estados-clientes.enum";
+
+// ======================================================
+// ENTITIES
+// ======================================================
+
 import { Proyecto } from "./proyecto.entity";
 
-@Entity({ name: "clientes" })
+@Entity({
+    name: "clientes"
+})
 export class Cliente {
 
-    // ID autoincremental de la tabla
+    /**
+     * ======================================================
+     * ID
+     * ======================================================
+     */
     @PrimaryGeneratedColumn()
     id!: number;
 
-    // Nombre único del cliente para evitar duplicados
-    @Column({ unique: true }) 
+    /**
+     * ======================================================
+     * NOMBRE
+     * ======================================================
+     * Cliente único
+     */
+    @Index({
+        unique: true
+    })
+    @Column({
+
+        type: 'varchar',
+
+        length: 150,
+
+        nullable: false
+    })
     nombre!: string;
 
-    // Estado del cliente usando el enum (por defecto activo)
-    @Column({ 
-        type: 'enum', 
+    /**
+     * ======================================================
+     * ESTADO
+     * ======================================================
+     */
+    @Column({
+
+        type: 'enum',
+
         enum: EstadosClientesEnum,
-        default: EstadosClientesEnum.ACTIVO 
+
+        default: EstadosClientesEnum.ACTIVO
     })
     estado!: EstadosClientesEnum;
 
-    // Un cliente puede tener muchos proyectos asociados
-    @OneToMany(() => Proyecto, (proyecto) => proyecto.cliente)
-    proyectos!: Proyecto[];
+    /**
+     * ======================================================
+     * FECHA CREACIÓN
+     * ======================================================
+     */
+    @CreateDateColumn({
+        type: 'timestamp'
+    })
+    fechaCreacion!: Date;
 
+    /**
+     * ======================================================
+     * FECHA ACTUALIZACIÓN
+     * ======================================================
+     */
+    @UpdateDateColumn({
+        type: 'timestamp'
+    })
+    fechaActualizacion!: Date;
+
+    /**
+     * ======================================================
+     * RELACIÓN PROYECTOS
+     * ======================================================
+     */
+    @OneToMany(
+
+        () => Proyecto,
+
+        (proyecto) => proyecto.cliente,
+
+        {
+
+            /**
+             * IMPORTANTE:
+             * Nunca cascada DELETE acá
+             */
+            cascade: false,
+
+            /**
+             * Evita carga automática pesada
+             */
+            eager: false
+        }
+    )
+    proyectos!: Proyecto[];
 }
