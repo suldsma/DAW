@@ -13,7 +13,11 @@ export class ListProyectoDTO {
     @ApiProperty()
     estado!: EstadosProyectosEnum;
 
-    @ApiProperty()
-    cliente!: ListClienteDTO;
+    @ApiProperty({ 
+        type: () => ListClienteDTO, 
+        nullable: true,
+        description: "null para proyectos internos"
+    })
+    cliente?: ListClienteDTO | null;
 
 }

@@ -1,9 +1,10 @@
-//BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/CREATE-CLIENTE.DTO.TS
+// BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/CREATE-CLIENTE.DTO.TS
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
 
 export class CreateClienteDto {
 
+    // Nombre del nuevo cliente
     @ApiProperty()
     @IsString()
     @IsNotEmpty()

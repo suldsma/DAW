@@ -1,51 +1,80 @@
-//BACKEND/SRC/MAIN.TS
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: process.env.CORS_ORIGIN || ['http://localhost:4200', 'http://localhost:3000'],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    },
-  });
+    // Creamos la instancia con CORS habilitado dinámicamente
+    const app = await NestFactory.create(AppModule);
 
-  // Validación global de DTOs
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+    // 1. Configuración de CORS optimizada para Angular
+    app.enableCors({
+        origin: (process.env.CORS_ORIGIN || 'http://localhost:4200').split(',').map(o => o.trim()),
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200,
+    });
 
-  // Configuración de Swagger
-  const config = new DocumentBuilder()
-    .setTitle('Sistema de Gestión de Proyectos')
-    .setDescription('API RESTful para gestión de proyectos, clientes y tareas')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .addTag('Autenticación', 'Endpoints de login y autenticación')
-    .addTag('Proyectos', 'Gestión de proyectos')
-    .addTag('Clientes', 'Gestión de clientes')
-    .addTag('Tareas', 'Gestión de tareas')
-    .addTag('Estadísticas', 'Reportes y estadísticas')
-    .build();
+    // 2. Seguridad: Headers HTTP (Configurado para no romper Swagger)
+    app.use(helmet({
+        contentSecurityPolicy: false, // Deshabilitado para que Swagger UI cargue sus scripts/estilos
+    }));
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+    // 3. Prefijo Global para la API (Opcional pero recomendado)
+    app.setGlobalPrefix('api/v1');
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`✅ Servidor ejecutándose en http://localhost:${port}`);
-  console.log(`📚 Documentación disponible en http://localhost:${port}/api/docs`);
+    // 4. Validación global de DTOs (Blindaje contra datos basura)
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,               // Elimina propiedades que no estén en el DTO
+            forbidNonWhitelisted: true,    // Lanza error si hay propiedades no permitidas
+            transform: true,               // Convierte tipos automáticamente (ej: string a number en IDs)
+            transformOptions: {
+                enableImplicitConversion: true,
+            },
+            exceptionFactory: (errors) => {
+                const messages = errors.map(e => ({
+                    field: e.property,
+                    errors: Object.values(e.constraints || {})
+                }));
+                return new BadRequestException({
+                    statusCode: 400,
+                    message: 'Error de validación en los datos enviados',
+                    errors: messages
+                });
+            }
+        }),
+    );
+
+    // 5. Configuración de Swagger (Documentación Interactiva)
+    const config = new DocumentBuilder()
+        .setTitle('Sistema de Gestión de Proyectos - API')
+        .setDescription('Documentación oficial de la API para la gestión de clientes, proyectos y tareas.')
+        .setVersion('1.0.0')
+        .addBearerAuth() // Habilita el botón de "Authorize" para el JWT
+        .addTag('Gestión - Clientes')
+        .addTag('Gestión - Proyectos')
+        .addTag('Gestión - Tareas')
+        .addTag('Gestión - Estadísticas')
+        .addTag('Seguridad - Autenticación')
+        .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    // La documentación estará en: http://localhost:3000/api/v1/docs
+    SwaggerModule.setup('api/v1/docs', app, document);
+
+    const port = process.env.PORT || 3000;
+    await app.listen(port);
+
+    console.log(`---`);
+    console.log(`🚀 Servidor listo en: http://localhost:${port}/api/v1`);
+    console.log(`📘 Swagger Docs: http://localhost:${port}/api/v1/docs`);
+    console.log(`---`);
 }
 
-bootstrap();
+bootstrap().catch(err => {
+    console.error('❌ Error crítico al iniciar el servidor:', err);
+    process.exit(1);
+});

@@ -5,15 +5,18 @@ import { ListTareaDTO } from "./list-tarea.dto";
 export class ProyectoDTO {
 
     @ApiProperty()
+    id!: number;
+
+    @ApiProperty()
     nombre!: string;
 
     @ApiProperty()
     estado!: EstadosProyectosEnum;
 
-    @ApiProperty()
-    cliente!: string;
+    @ApiProperty({ nullable: true })
+    cliente?: string; // null para proyectos internos
 
-    @ApiProperty()
+    @ApiProperty({ type: () => ListTareaDTO, isArray: true })
     tareas!: ListTareaDTO[];
 
 }

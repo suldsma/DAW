@@ -1,4 +1,5 @@
 <div class="container">
+  <!-- Encabezado con botón de nuevo proyecto -->
   <div class="header">
     <h1>Gestión de Proyectos</h1>
     <button mat-raised-button color="primary" (click)="abrirFormulario()">
@@ -6,19 +7,28 @@
     </button>
   </div>
 
-  <mat-card class="table-card">
+  <!-- Spinner de carga -->
+  <div *ngIf="isLoading" style="display: flex; justify-content: center; padding: 20px;">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Tarjeta con tabla de proyectos -->
+  <mat-card class="table-card" *ngIf="!isLoading">
     <table mat-table [dataSource]="proyectos" class="full-width">
 
+      <!-- Columna: Nombre del Proyecto -->
       <ng-container matColumnDef="nombre">
         <th mat-header-cell *matHeaderCellDef> Nombre del Proyecto </th>
         <td mat-cell *mat-cell="let p"> {{p.nombre}} </td>
       </ng-container>
 
+      <!-- Columna: Cliente -->
       <ng-container matColumnDef="cliente">
         <th mat-header-cell *matHeaderCellDef> Cliente </th>
         <td mat-cell *mat-cell="let p"> {{p.cliente?.nombre || 'Interno'}} </td>
       </ng-container>
 
+      <!-- Columna: Estado -->
       <ng-container matColumnDef="estado">
         <th mat-header-cell *matHeaderCellDef> Estado </th>
         <td mat-cell *mat-cell="let p">
@@ -30,21 +40,30 @@
         </td>
       </ng-container>
 
+      <!-- Columna: Acciones -->
       <ng-container matColumnDef="acciones">
         <th mat-header-cell *matHeaderCellDef> Acciones </th>
         <td mat-cell *mat-cell="let p">
-          <button mat-icon-button color="primary" title="Editar">
+          <!-- Botón Ver Detalle -->
+          <button mat-icon-button color="info" title="Ver detalle" (click)="verDetalle(p.id)">
+            <mat-icon>info</mat-icon>
+          </button>
+          <!-- Botón Editar -->
+          <button mat-icon-button color="primary" title="Editar" (click)="editarProyecto(p)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button color="warn" title="Dar de baja">
+          <!-- Botón Eliminar -->
+          <button mat-icon-button color="warn" title="Dar de baja" (click)="eliminarProyecto(p.id)">
             <mat-icon>delete_outline</mat-icon>
           </button>
         </td>
       </ng-container>
 
+      <!-- Filas del header y cuerpo -->
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
+      <!-- Fila sin datos -->
       <tr class="mat-row" *matNoDataRow>
         <td class="mat-cell" colspan="4" style="padding: 20px; text-align: center;">
           No hay proyectos registrados para mostrar.

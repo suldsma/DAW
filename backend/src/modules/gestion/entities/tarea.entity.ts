@@ -1,7 +1,8 @@
 // BACKEND/SRC/MODULES/GESTION/ENTITIES/TAREA.ENTITY.TS
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { EstadosTareasEnum } from "../enums/estados-tareas.enum";
 import { Proyecto } from "./proyecto.entity";
+import { ComentarioTarea } from "./comentario-tarea.entity";
 
 @Entity({ name: "tareas" })
 export class Tarea {
@@ -15,7 +16,7 @@ export class Tarea {
     @Column({ 
         type: "enum", 
         enum: EstadosTareasEnum,
-        default: EstadosTareasEnum.PENDIENTE // Valor inicial por defecto
+        default: EstadosTareasEnum.PENDIENTE
     })
     estado!: EstadosTareasEnum;
 
@@ -23,9 +24,12 @@ export class Tarea {
     idProyecto!: number;
 
     // Relación con Proyecto
-    // Agregamos (proyecto) => proyecto.tareas para que TypeORM conecte ambos lados
     @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas, { onDelete: 'CASCADE' })
     @JoinColumn({ name: "id_proyecto" })
     proyecto!: Proyecto;
+
+    // ✅ NUEVA RELACIÓN: Comentarios en tareas
+    @OneToMany(() => ComentarioTarea, (comentario) => comentario.tarea, { cascade: true })
+    comentarios!: ComentarioTarea[];
 
 }

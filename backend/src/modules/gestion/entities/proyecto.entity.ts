@@ -7,12 +7,15 @@ import { Tarea } from "./tarea.entity";
 @Entity({ name: "proyectos" })
 export class Proyecto {
 
+    // ID del proyecto
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ unique: true }) // Según el Script SQL, el nombre es UNIQUE
+    // Nombre del proyecto (no se puede repetir)
+    @Column({ unique: true }) 
     nombre!: string;
 
+    // Estado actual del proyecto (por defecto Activo)
     @Column({ 
         type: 'enum', 
         enum: EstadosProyectosEnum,
@@ -20,16 +23,16 @@ export class Proyecto {
     })
     estado!: EstadosProyectosEnum;
 
-    // Permitimos null para proyectos internos de la empresa
+    // FK del cliente, puede ser null si es un proyecto interno
     @Column({ name: "id_cliente", nullable: true }) 
     idCliente?: number;
 
+    // Relación con la tabla de clientes
     @ManyToOne(() => Cliente, (cliente) => cliente.proyectos, { nullable: true })
     @JoinColumn({ name: "id_cliente" })
     cliente?: Cliente;
 
-    // Relación con Tareas
-    // Importante: onDelete: 'CASCADE' ayuda si quieres que al borrar el proyecto se borren sus tareas
+    // Un proyecto tiene muchas tareas asociadas
     @OneToMany(() => Tarea, (tarea) => tarea.proyecto, { cascade: true })
     tareas!: Tarea[];
 }

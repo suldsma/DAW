@@ -1,20 +1,36 @@
 // BACKEND/SRC/APP.MODULE.TS
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+// Módulos funcionales
 import { AuthModule } from './modules/auth/auth.module';
 import { GestionModule } from './modules/gestion/gestion.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { EstadisticasModule } from './modules/estadisticas/estadisticas.module';
-
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 @Module({
   imports: [
-    // 1. Cargamos configuración global primero
+    // 1. Configuración global con validación de seguridad
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env', // Asegura que busque el archivo .env en la raíz
+      envFilePath: '.env',
+      validate: (config) => {
+        const requiredVars = ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
+        const missing = requiredVars.filter(v => !config[v]);
+        
+        if (missing.length > 0) {
+          throw new Error(`Variables de entorno faltantes: ${missing.join(', ')}`);
+        }
+        
+        if (config.JWT_SECRET && config.JWT_SECRET.length < 32) {
+          console.warn('⚠️ ADVERTENCIA: JWT_SECRET debe tener al menos 32 caracteres en producción');
+        }
+        
+        return config;
+      }
     }),
 
-    // 2. Conexión a la base de datos
+    // 2. Conexión a la base de datos (PostgreSQL)
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -22,17 +38,23 @@ import { EstadisticasModule } from './modules/estadisticas/estadisticas.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      autoLoadEntities: true, // Esto es clave: carga automáticamente Usuario, Cliente, Proyecto, Tarea
-      synchronize: false,    // Mantenemos en false porque usas Script SQL
-      logging: process.env.NODE_ENV === 'development', // Solo loguea en desarrollo
+      autoLoadEntities: true,
+      synchronize: false, // Mantener en false y usar migraciones
+      logging: process.env.NODE_ENV === 'development',
+      extra: {
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      }
     }),
 
-    // 3. Módulos funcionales
+    // 3. Registro de Módulos
     AuthModule,
     GestionModule,
-    EstadisticasModule
+    EstadisticasModule,
+    AuditoriaModule, 
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

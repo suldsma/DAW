@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AuthGuard } from './core/guards/auth.guard'; // ✅ IMPORTAR
 
 export const routes: Routes = [
   {
@@ -6,9 +7,9 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login').then(m => m.Login)
   },
   {
-    // AGREGÁ ESTA RUTA: Es a donde querés ir después del login
-    path: 'proyectos', 
-    loadComponent: () => import('./features/projects/project-list/project-list').then(m => m.ProjectList)
+    path: 'proyectos',
+    loadComponent: () => import('./features/projects/project-list/project-list').then(m => m.ProjectList),
+    canActivate: [AuthGuard] // ✅ PROTEGER RUTA CON AUTHGUARD
   },
   {
     path: '',

@@ -6,20 +6,23 @@ import { Proyecto } from "./proyecto.entity";
 @Entity({ name: "clientes" })
 export class Cliente {
 
+    // ID autoincremental de la tabla
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ unique: true }) // Coincide con el UNIQUE de tu Script SQL
+    // Nombre único del cliente para evitar duplicados
+    @Column({ unique: true }) 
     nombre!: string;
 
+    // Estado del cliente usando el enum (por defecto activo)
     @Column({ 
         type: 'enum', 
         enum: EstadosClientesEnum,
-        default: EstadosClientesEnum.ACTIVO // Valor por defecto al crear
+        default: EstadosClientesEnum.ACTIVO 
     })
     estado!: EstadosClientesEnum;
 
-    // Relación con Proyectos
+    // Un cliente puede tener muchos proyectos asociados
     @OneToMany(() => Proyecto, (proyecto) => proyecto.cliente)
     proyectos!: Proyecto[];
 
