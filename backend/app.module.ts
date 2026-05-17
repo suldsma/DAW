@@ -42,7 +42,8 @@ import { AuditoriaModule } from './src/modules/auditoria/auditoria.module';
                 password: configService.get<string>('DB_PASSWORD'),
                 database: configService.get<string>('DB_NAME'),
                 autoLoadEntities: true,
-                synchronize: configService.get('NODE_ENV') === 'development', 
+                synchronize: false, 
+                
                 logging: configService.get('NODE_ENV') === 'development',
             })
         }),
