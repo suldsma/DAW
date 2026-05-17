@@ -1,6 +1,6 @@
 // src/app/modules/estadisticas/pages/estadisticas.component.ts
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core'; // ✅ Agregado ChangeDetectorRef
 import { CommonModule } from '@angular/common';
 import { EstadisticasService } from '../../../shared/services/estadisticas.service';
 import {
@@ -27,7 +27,11 @@ export class EstadisticasComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private estadisticasService: EstadisticasService) {}
+  // ✅ Inyectamos cdr en el constructor
+  constructor(
+    private estadisticasService: EstadisticasService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.cargarEstadisticas();
@@ -47,9 +51,11 @@ export class EstadisticasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.resumen = data;
+          this.verificarFinCarga(); // ✅ Comprueba si ya terminó todo
         },
         error: (error) => {
           console.error('Error al cargar resumen:', error);
+          this.verificarFinCarga();
         }
       });
 
@@ -58,9 +64,11 @@ export class EstadisticasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.estadisticasPorCliente = data;
+          this.verificarFinCarga(); // ✅ Comprueba si ya terminó todo
         },
         error: (error) => {
           console.error('Error al cargar estadísticas por cliente:', error);
+          this.verificarFinCarga();
         }
       });
 
@@ -69,13 +77,24 @@ export class EstadisticasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.estadisticasPorProyecto = data;
-          this.cargando = false; // Finalizo el estado de carga al completarse la última respuesta esperada
+          this.verificarFinCarga(); // ✅ Comprueba si ya terminó todo
         },
         error: (error) => {
           console.error('Error al cargar estadísticas por proyecto:', error);
-          this.cargando = false;
+          this.verificarFinCarga();
         }
       });
+  }
+
+  // ✅ Nueva función auxiliar para apagar el spinner de forma segura y forzar el redibujado
+  private verificarFinCarga(): void {
+    // Si ya tenemos respuestas (o intentos fallidos) de los flujos principales, apagamos el spinner
+    if (this.resumen !== null || this.estadisticasPorCliente.length > 0 || this.estadisticasPorProyecto.length > 0) {
+      this.cargando = false;
+      
+      // 🚀 FORZAMOS A ANGULAR A DESPERTAR Y REDIBUJAR
+      this.cdr.detectChanges(); 
+    }
   }
 
   // Define dinámicamente el color de la barra de progreso (Verde, Amarillo o Rojo)

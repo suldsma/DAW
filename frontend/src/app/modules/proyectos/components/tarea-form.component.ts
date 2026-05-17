@@ -1,11 +1,24 @@
 // src/app/modules/proyectos/components/tarea-form.component.ts
 
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  OnInit, 
+  OnDestroy 
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { 
+  FormsModule, 
+  ReactiveFormsModule, 
+  FormBuilder, 
+  FormGroup, 
+  Validators 
+} from '@angular/forms';
 import { TareaService } from '../../../shared/services/tarea.service';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tarea-form',
@@ -21,7 +34,8 @@ import { takeUntil } from 'rxjs/operators';
           placeholder="Describe la tarea..."
           rows="4"
           class="input-textarea"
-          [class.input-error]="mostrarErrores && descripcion?.invalid">
+          [class.input-error]="mostrarErrores && descripcion?.invalid"
+          [disabled]="guardando">
         </textarea>
         <span class="error-text" *ngIf="mostrarErrores && descripcion?.invalid">
           {{ getDescripcionError() }}
@@ -29,10 +43,17 @@ import { takeUntil } from 'rxjs/operators';
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelar()">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="cancelar()"
+          [disabled]="guardando">
           Cancelar
         </button>
-        <button type="submit" class="btn btn-primary" [disabled]="guardando || formulario.invalid">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="guardando || formulario.invalid">
           <span *ngIf="!guardando">Crear Tarea</span>
           <span *ngIf="guardando" class="loading-text">
             <span class="mini-spinner"></span> Guardando...
@@ -74,6 +95,11 @@ import { takeUntil } from 'rxjs/operators';
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-textarea:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
     }
 
     .input-error {
@@ -127,8 +153,13 @@ import { takeUntil } from 'rxjs/operators';
       color: #333;
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       background-color: #d0d0d0;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .loading-text {
@@ -154,7 +185,6 @@ import { takeUntil } from 'rxjs/operators';
   `]
 })
 export class TareaFormComponent implements OnInit, OnDestroy {
-  // Recibe obligatoriamente el ID del proyecto al que se le va a anexar la nueva tarea
   @Input() idProyecto!: number;
   @Output() onGuardado = new EventEmitter<void>();
   @Output() onCancelado = new EventEmitter<void>();
@@ -172,21 +202,21 @@ export class TareaFormComponent implements OnInit, OnDestroy {
     this.crearFormulario();
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // No hacer nada especial en init
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // Inicializa el control reactivo con su regla de longitud mínima
   crearFormulario(): void {
     this.formulario = this.fb.group({
       descripcion: ['', [Validators.required, Validators.minLength(5)]]
     });
   }
 
-  // Envía la nueva tarea a la API vinculándola al proyecto correspondiente
   guardar(): void {
     this.mostrarErrores = false;
 
@@ -201,33 +231,51 @@ export class TareaFormComponent implements OnInit, OnDestroy {
     this.tareaService.crearTarea(this.idProyecto, {
       descripcion: datos.descripcion
     })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          
+          this.guardando = false;
+        })
+      )
       .subscribe({
         next: () => {
-          this.guardando = false;
+          
+          this.formulario.reset();
+          this.mostrarErrores = false;
           this.onGuardado.emit();
-          this.formulario.reset(); 
         },
         error: (error) => {
+          // ❌ Error: mostrar mensaje
           console.error('Error al crear la tarea:', error);
-          this.guardando = false;
+          
+          const mensajeError = error.error?.message 
+            || error.message 
+            || 'Error al crear la tarea';
+          
+          alert(`❌ Error: ${mensajeError}`);
+          
         }
       });
   }
 
   cancelar(): void {
+    this.formulario.reset();
+    this.mostrarErrores = false;
     this.onCancelado.emit();
   }
 
-  // Getter para abreviar el acceso a las validaciones del campo en la vista HTML
   get descripcion() {
     return this.formulario.get('descripcion');
   }
 
-  // Helper para alternar las strings de error de la descripción
   getDescripcionError(): string {
-    if (this.descripcion?.errors?.['required']) return 'La descripción es requerida';
-    if (this.descripcion?.errors?.['minlength']) return 'La descripción debe tener al menos 5 caracteres';
+    if (this.descripcion?.errors?.['required']) {
+      return 'La descripción es requerida';
+    }
+    if (this.descripcion?.errors?.['minlength']) {
+      return 'La descripción debe tener al menos 5 caracteres';
+    }
     return '';
   }
 }

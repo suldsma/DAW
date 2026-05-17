@@ -1,10 +1,19 @@
 // src/app/modules/proyectos/components/kanban-board.component.ts
 
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  OnInit, 
+  OnDestroy 
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TareasKanban, EstadoTarea } from '../../../shared/models/index';
 import { TareaFormComponent } from './tarea-form.component';
 import { TareaService } from '../../../shared/services/tarea.service';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-kanban-board',
@@ -23,7 +32,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
 
           <div class="column-content">
             <div class="card-add">
-              <button (click)="abrirFormularioTarea()" type="button">
+              <button (click)="abrirFormularioTarea()" type="button" [disabled]="cargando">
                 ✚ Agregar Tarea
               </button>
             </div>
@@ -34,18 +43,19 @@ import { TareaService } from '../../../shared/services/tarea.service';
                   <h4>{{ tarea.descripcion }}</h4>
                   <div class="card-actions">
                     <button
-                      class="btn-icon"
+                      class="btn-icon btn-check"
                       (click)="finalizarTarea(tarea)"
-                      title="Finalizar"
-                      type="button">
+                      title="Finalizar tarea"
+                      type="button"
+                      [disabled]="cargando">
                       ✓
                     </button>
                     <button
-                      class="btn-icon"
                       class="btn-icon btn-delete"
                       (click)="eliminarTarea(tarea)"
-                      title="Eliminar"
-                      type="button">
+                      title="Eliminar tarea"
+                      type="button"
+                      [disabled]="cargando">
                       ✕
                     </button>
                   </div>
@@ -74,8 +84,9 @@ import { TareaService } from '../../../shared/services/tarea.service';
                   <button
                     class="btn-icon btn-delete"
                     (click)="eliminarTarea(tarea)"
-                    title="Eliminar"
-                    type="button">
+                    title="Eliminar tarea"
+                    type="button"
+                    [disabled]="cargando">
                     ✕
                   </button>
                 </div>
@@ -94,7 +105,13 @@ import { TareaService } from '../../../shared/services/tarea.service';
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2>Crear Tarea</h2>
-            <button class="btn-close" (click)="cerrarFormularioTarea()" type="button">✕</button>
+            <button 
+              class="btn-close" 
+              (click)="cerrarFormularioTarea()" 
+              type="button"
+              [disabled]="cargando">
+              ✕
+            </button>
           </div>
           <div class="modal-body">
             <app-tarea-form
@@ -116,6 +133,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
       margin: 0 0 20px;
       font-size: 24px;
       color: #333;
+      font-weight: 600;
     }
 
     .kanban-board {
@@ -146,6 +164,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
       margin: 0;
       font-size: 18px;
       color: #333;
+      font-weight: 600;
     }
 
     .count {
@@ -179,11 +198,18 @@ import { TareaService } from '../../../shared/services/tarea.service';
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 14px;
       transition: all 0.3s ease;
     }
 
-    .card-add button:hover {
+    .card-add button:hover:not(:disabled) {
       background: #f0f0f0;
+      border-color: #764ba2;
+    }
+
+    .card-add button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .cards-list {
@@ -237,6 +263,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
     .card-actions {
       display: flex;
       gap: 5px;
+      flex-shrink: 0;
     }
 
     .btn-icon {
@@ -246,10 +273,20 @@ import { TareaService } from '../../../shared/services/tarea.service';
       font-size: 16px;
       padding: 3px 6px;
       transition: all 0.2s ease;
+      color: #667eea;
     }
 
-    .btn-icon:hover {
+    .btn-icon:hover:not(:disabled) {
       transform: scale(1.2);
+    }
+
+    .btn-icon:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-check {
+      color: #10b981;
     }
 
     .btn-delete {
@@ -285,6 +322,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
       margin: 0;
     }
 
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -331,6 +369,7 @@ import { TareaService } from '../../../shared/services/tarea.service';
       margin: 0;
       font-size: 20px;
       color: #333;
+      font-weight: 600;
     }
 
     .btn-close {
@@ -348,14 +387,20 @@ import { TareaService } from '../../../shared/services/tarea.service';
       transition: color 0.2s ease;
     }
 
-    .btn-close:hover {
+    .btn-close:hover:not(:disabled) {
       color: #333;
+    }
+
+    .btn-close:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .modal-body {
       padding: 20px;
     }
 
+    /* RESPONSIVE */
     @media (max-width: 768px) {
       .kanban-board {
         grid-template-columns: 1fr;
@@ -371,19 +416,25 @@ import { TareaService } from '../../../shared/services/tarea.service';
     }
   `]
 })
-export class KanbanBoardComponent implements OnInit {
-  // Datos y referencias que vienen del componente padre (Detalle del Proyecto)
+export class KanbanBoardComponent implements OnInit, OnDestroy {
   @Input() tareasKanban!: TareasKanban;
   @Input() idProyecto!: number;
   @Output() onTareaGuardada = new EventEmitter<void>();
 
   mostrarFormularioTarea = false;
+  cargando = false;
+
+  private destroy$ = new Subject<void>();
 
   constructor(private tareaService: TareaService) {}
 
   ngOnInit(): void {}
 
-  // Control de apertura y cierre para el modal de tareas
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   abrirFormularioTarea(): void {
     this.mostrarFormularioTarea = true;
   }
@@ -392,36 +443,52 @@ export class KanbanBoardComponent implements OnInit {
     this.mostrarFormularioTarea = false;
   }
 
-  // Notifica al padre para que refresque la lista de tareas al insertar una nueva
   onTareaCreada(): void {
     this.cerrarFormularioTarea();
     this.onTareaGuardada.emit();
   }
 
-  // Pasa el estado de una tarea específica a completado
   finalizarTarea(tarea: any): void {
+    this.cargando = true;
+
     this.tareaService.actualizarTarea(this.idProyecto, tarea.id, {
       estado: EstadoTarea.FINALIZADA
-    }).subscribe({
-      next: () => {
-        this.onTareaGuardada.emit();
-      },
-      error: (error) => {
-        console.error('Error al finalizar tarea:', error);
-      }
-    });
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.cargando = false) 
+      )
+      .subscribe({
+        next: () => {
+          this.onTareaGuardada.emit();
+        },
+        error: (error) => {
+          console.error('Error al finalizar tarea:', error);
+          alert('Error al finalizar la tarea');
+        }
+      });
   }
 
   eliminarTarea(tarea: any): void {
-    if (confirm('¿Estás seguro que deseas eliminar esta tarea?')) {
-      this.tareaService.eliminarTarea(this.idProyecto, tarea.id).subscribe({
+    if (!confirm('¿Estás seguro que deseas eliminar esta tarea?')) {
+      return;
+    }
+
+    this.cargando = true;
+
+    this.tareaService.eliminarTarea(this.idProyecto, tarea.id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.cargando = false) 
+      )
+      .subscribe({
         next: () => {
           this.onTareaGuardada.emit();
         },
         error: (error) => {
           console.error('Error al eliminar tarea:', error);
+          alert('Error al eliminar la tarea');
         }
       });
-    }
   }
 }

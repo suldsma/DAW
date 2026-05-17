@@ -56,7 +56,7 @@ export const routes: Routes = [
     ]
   },
 
-  // ===== RUTA CATCH-ALL (CUALQUIER OTRA URL) =====
+  // ===== RUTA CATCH-ALL  =====
   {
     path: '**',
     redirectTo: '/proyectos'

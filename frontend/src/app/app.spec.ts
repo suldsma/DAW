@@ -19,7 +19,6 @@ describe('AppComponent', () => {
     await fixture.whenStable();
     const app = fixture.componentInstance;
     
-    // Evaluamos directamente la señal 'title' que definiste en tu AppComponent
     expect(app.title()).toContain('Gestión de Proyectos');
   });
 });

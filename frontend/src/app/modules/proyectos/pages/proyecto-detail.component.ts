@@ -8,8 +8,8 @@ import { ProyectoService } from '../../../shared/services/proyecto.service';
 import { TareaService } from '../../../shared/services/tarea.service';
 import { ProyectoConTareas, TareasKanban } from '../../../shared/models/index';
 import { KanbanBoardComponent } from '../components/kanban-board.component';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-proyecto-detail',
@@ -77,9 +77,7 @@ import { takeUntil } from 'rxjs/operators';
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
 
     .loading p {
@@ -198,13 +196,12 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
-  // Recupera el ID de los parámetros de la URL para inicializar las consultas
   ngOnInit(): void {
-    this.route.params.pipe(takeUntil(this.destroy$))
+    this.route.params
+      .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         this.idProyecto = parseInt(params['id'], 10);
-        this.cargarProyecto();
-        this.cargarKanban();
+        this.cargarDatosIniciales();
       });
   }
 
@@ -213,28 +210,43 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  cargarProyecto(): void {
-    this.proyectoService.obtenerProyecto(this.idProyecto)
-      .pipe(takeUntil(this.destroy$))
+  /**
+   * ✅ CORREGIDO: Cargamos el proyecto y el tablero en paralelo usando forkJoin.
+   * La vista no cambia a "cargando = false" hasta que AMBOS servicios responden,
+   * fulminando el error de bucle infinito NG0103.
+   */
+  cargarDatosIniciales(): void {
+    this.cargando = true;
+
+    forkJoin({
+      proyecto: this.proyectoService.obtenerProyecto(this.idProyecto),
+      kanban: this.tareaService.obtenerTableroKanban(this.idProyecto)
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.cargando = false)
+      )
       .subscribe({
-        next: (data) => {
-          this.proyecto = data;
-          
+        next: (resultado) => {
+          this.proyecto = resultado.proyecto;
+          this.tareasKanban = resultado.kanban;
+
           if (this.proyecto) {
             this.calcularValoresEstado(this.proyecto.estado);
           }
-          
-          this.cargando = false;
         },
         error: (error) => {
-          console.error('Error al cargar proyecto:', error);
+          console.error('Error al cargar datos del detalle:', error);
           this.router.navigate(['/proyectos']);
-          this.cargando = false;
         }
       });
   }
 
-  cargarKanban(): void {
+  /**
+   * Recarga únicamente el tablero Kanban cuando una tarea es guardada/eliminada/finalizada.
+   * Al no tocar la variable 'cargando' general, la recarga es instantánea y transparente.
+   */
+  cargarKanbanSolo(): void {
     this.tareaService.obtenerTableroKanban(this.idProyecto)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -242,12 +254,11 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
           this.tareasKanban = data;
         },
         error: (error) => {
-          console.error('Error al cargar Kanban:', error);
+          console.error('Error al actualizar Kanban:', error);
         }
       });
   }
 
-  // Mapea el texto informativo y el color del tag según el estado del proyecto
   private calcularValoresEstado(estado: string): void {
     switch (estado) {
       case 'ACTIVO':
@@ -270,7 +281,7 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
   }
 
   onTareaGuardada(): void {
-    this.cargarKanban();
+    this.cargarKanbanSolo();
   }
 
   volver(): void {

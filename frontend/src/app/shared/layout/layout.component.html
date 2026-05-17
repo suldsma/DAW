@@ -1,7 +1,4 @@
-<!-- src/app/shared/layout/layout.component.html -->
-
 <div class="layout-container">
-  <!-- Sidebar -->
   <aside class="sidebar" [class.closed]="!sidebarAbierto">
     <div class="sidebar-header">
       <h1 class="logo">SGP</h1>
@@ -13,28 +10,19 @@
     <nav class="sidebar-nav">
       <ul>
         <li>
-          <a 
-            routerLink="/proyectos" 
-            routerLinkActive="active"
-            (click)="sidebarAbierto = false">
+          <a routerLink="/proyectos" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
             <span class="icon">📋</span>
             <span class="label" *ngIf="sidebarAbierto">Proyectos</span>
           </a>
         </li>
         <li>
-          <a 
-            routerLink="/clientes" 
-            routerLinkActive="active"
-            (click)="sidebarAbierto = false">
+          <a routerLink="/clientes" routerLinkActive="active">
             <span class="icon">👥</span>
             <span class="label" *ngIf="sidebarAbierto">Clientes</span>
           </a>
         </li>
         <li>
-          <a 
-            routerLink="/estadisticas" 
-            routerLinkActive="active"
-            (click)="sidebarAbierto = false">
+          <a routerLink="/estadisticas" routerLinkActive="active">
             <span class="icon">📊</span>
             <span class="label" *ngIf="sidebarAbierto">Estadísticas</span>
           </a>
@@ -49,48 +37,50 @@
     </div>
   </aside>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-left">
-      <button class="btn-menu" (click)="toggleMenu()" type="button">
-        <span>☰</span>
-      </button>
-      <h2 class="header-title">Sistema de Gestión de Proyectos</h2>
-    </div>
-
-    <div class="header-right">
-      <div class="user-info">
-        <div class="avatar">{{ inicialUsuario }}</div>
-        <div class="user-details">
-          <span class="user-name">{{ nombreUsuario }}</span>
-          <span class="user-status">Conectado</span>
-        </div>
+  <div class="main-layout">
+    
+    <header class="header">
+      <div class="header-left">
+        <button class="btn-menu" (click)="toggleSidebar()" type="button">
+          <span>☰</span>
+        </button>
+        <h2 class="header-title">Sistema de Gestión de Proyectos</h2>
       </div>
 
-      <button 
-        class="btn-user-menu" 
-        (click)="toggleMenu()"
-        type="button">
-        <span>▼</span>
-      </button>
+      <div class="header-right">
+        <div class="user-info" (click)="toggleMenu($event)">
+          <div class="avatar">{{ inicialUsuario }}</div>
+          <div class="user-details">
+            <span class="user-name">{{ nombreUsuario }}</span>
+            <span class="user-status">Conectado</span>
+          </div>
+        </div>
 
-      <nav class="user-menu" [class.active]="menuAbierto">
-        <a routerLink="/perfil" (click)="menuAbierto = false">
-          Mi Perfil
-        </a>
-        <hr>
         <button 
-          (click)="cerrarSesion()" 
-          class="btn-logout-menu"
+          class="btn-user-menu" 
+          (click)="toggleMenu($event)"
           type="button">
-          Cerrar Sesión
+          <span>▼</span>
         </button>
-      </nav>
-    </div>
-  </header>
 
-  <!-- Main Content -->
-  <main class="main-content" [class.sidebar-closed]="!sidebarAbierto">
-    <router-outlet></router-outlet>
-  </main>
+        <nav class="user-menu" [class.active]="menuAbierto">
+          <a routerLink="/perfil" (click)="menuAbierto = false">
+            Mi Perfil
+          </a>
+          <hr>
+          <button 
+            (click)="cerrarSesion()" 
+            class="btn-logout-menu"
+            type="button">
+            Cerrar Sesión
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content" [class.sidebar-closed]="!sidebarAbierto">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div> 
 </div>

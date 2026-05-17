@@ -1,15 +1,30 @@
-// ============================================================
-// ARCHIVO: src/app/modules/proyectos/components/proyecto-form.component.ts
-// ACTUALIZACIÓN: Filtrar clientes ACTIVOS manteniendo el asignado en edición
-// ============================================================
+// src/app/modules/proyectos/components/proyecto-form.component.ts
 
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  OnInit, 
+  OnDestroy 
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { 
+  FormsModule, 
+  ReactiveFormsModule, 
+  FormBuilder, 
+  FormGroup, 
+  Validators 
+} from '@angular/forms';
 import { ProyectoService } from '../../../shared/services/proyecto.service';
-import { Proyecto, Cliente, EstadoProyecto, EstadoCliente } from '../../../shared/models/index';
+import { 
+  Proyecto, 
+  Cliente, 
+  EstadoProyecto, 
+  EstadoCliente 
+} from '../../../shared/models/index';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-proyecto-form',
@@ -25,7 +40,8 @@ import { takeUntil } from 'rxjs/operators';
           formControlName="nombre"
           placeholder="Ingresa el nombre del proyecto"
           class="input-text"
-          [class.input-error]="mostrarErrores && nombre?.invalid">
+          [class.input-error]="mostrarErrores && nombre?.invalid"
+          [disabled]="guardando">
         <span class="error-text" *ngIf="mostrarErrores && nombre?.invalid">
           {{ getNombreError() }}
         </span>
@@ -33,22 +49,30 @@ import { takeUntil } from 'rxjs/operators';
 
       <div class="form-group">
         <label for="idCliente">Cliente (Opcional)</label>
-        <select formControlName="idCliente" class="input-select">
+        <select 
+          id="idCliente"
+          formControlName="idCliente" 
+          class="input-select"
+          [disabled]="guardando">
           <option [value]="null">Sin cliente (Proyecto Interno)</option>
           
           <option *ngFor="let cliente of clientesMostrables" [value]="cliente.id">
-            {{ cliente.nombre }} {{ cliente.estado === 'BAJA' ? '(Inactivo)' : '' }}
+            {{ cliente.nombre }}
           </option>
         </select>
         
-        <span class="advertencia-text" *ngIf="clientesMostrables.length === 0">
+        <span class="advertencia-text" *ngIf="clientesActivos.length === 0 && !proyecto">
           ⚠️ No hay clientes ACTIVOS disponibles. Solo se pueden asignar clientes en estado ACTIVO.
         </span>
       </div>
 
       <div class="form-group" *ngIf="proyecto">
         <label for="estado">Estado</label>
-        <select formControlName="estado" class="input-select">
+        <select 
+          id="estado"
+          formControlName="estado" 
+          class="input-select"
+          [disabled]="guardando">
           <option value="ACTIVO">Activo</option>
           <option value="FINALIZADO">Finalizado</option>
           <option value="BAJA">Baja</option>
@@ -56,7 +80,11 @@ import { takeUntil } from 'rxjs/operators';
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelar()">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="cancelar()"
+          [disabled]="guardando">
           Cancelar
         </button>
         <button 
@@ -105,6 +133,12 @@ import { takeUntil } from 'rxjs/operators';
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-text:disabled,
+    .input-select:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
     }
 
     .input-error {
@@ -167,8 +201,13 @@ import { takeUntil } from 'rxjs/operators';
       color: #333;
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       background-color: #d0d0d0;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .loading-text {
@@ -214,12 +253,9 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.proyecto) {
-      // Convertir explícitamente a string o número según cómo manejes la consistencia del ID
-      const idClienteValue = this.proyecto.idCliente ? Number(this.proyecto.idCliente) : null;
-      
       this.formulario.patchValue({
         nombre: this.proyecto.nombre,
-        idCliente: idClienteValue,
+        idCliente: this.proyecto.idCliente ? Number(this.proyecto.idCliente) : null,
         estado: this.proyecto.estado
       });
     }
@@ -238,16 +274,24 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * ✅ GETTER SEGURO: Retorna los clientes en estado ACTIVO 
-   * MÁS el cliente actualmente asignado al proyecto (evita romper la selección en edición)
-   */
+  get clientesActivos(): Cliente[] {
+    return this.clientes.filter(c => c.estado === EstadoCliente.ACTIVO);
+  }
+
   get clientesMostrables(): Cliente[] {
-    return this.clientes.filter(c => {
-      const esActivo = c.estado === EstadoCliente.ACTIVO;
-      const esElClienteAsignado = this.proyecto && Number(this.proyecto.idCliente) === Number(c.id);
-      return esActivo || esElClienteAsignado;
-    });
+    const clientesActivos = this.clientesActivos;
+    
+    if (this.proyecto && this.proyecto.idCliente) {
+      const clienteActual = this.clientes.find(
+        c => Number(c.id) === Number(this.proyecto?.idCliente)
+      );
+      
+      if (clienteActual && !clientesActivos.find(c => c.id === clienteActual.id)) {
+        return [...clientesActivos, clienteActual];
+      }
+    }
+    
+    return clientesActivos;
   }
 
   guardar(): void {
@@ -260,51 +304,60 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
 
     this.guardando = true;
     const datos = this.formulario.value;
+    const idClienteFinal = datos.idCliente ? Number(datos.idCliente) : null;
 
-    // Normalización para enviar tipos correctos (select strings "null" a null real)
-    const idClienteFinal = (datos.idCliente === 'null' || datos.idCliente === null) ? null : Number(datos.idCliente);
-
-    const payload = {
-      nombre: datos.nombre,
-      idCliente: idClienteFinal,
-      estado: datos.estado
+    // ✅ CORREGIDO: Declaramos payload explícitamente con índice de tipo para permitir asignaciones dinámicas.
+    const payload: { nombre: string; idCliente: number | null; [key: string]: any } = {
+      nombre: datos.nombre.trim(),
+      idCliente: idClienteFinal
     };
 
     if (this.proyecto) {
+      // ACTUALIZAR
+      payload['estado'] = datos.estado;
+
       this.proyectoService.actualizarProyecto(this.proyecto.id, payload)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.guardando = false)
+        )
         .subscribe({
           next: () => {
-            this.guardando = false;
             this.onGuardado.emit();
           },
           error: (error) => {
             console.error('Error al actualizar:', error);
-            alert(error.error?.message || 'Error al actualizar el proyecto');
-            this.guardando = false;
+            const mensaje = error.error?.message || 'Error al actualizar el proyecto';
+            alert(`❌ ${mensaje}`);
           }
         });
     } else {
+      // CREAR
       this.proyectoService.crearProyecto({
         nombre: payload.nombre,
         idCliente: payload.idCliente
       })
-        .pipe(takeUntil(this.destroy$))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.guardando = false)
+        )
         .subscribe({
           next: () => {
-            this.guardando = false;
+            this.formulario.reset();
             this.onGuardado.emit();
           },
           error: (error) => {
             console.error('Error al crear:', error);
-            alert(error.error?.message || 'Error al crear el proyecto');
-            this.guardando = false;
+            const mensaje = error.error?.message || 'Error al crear el proyecto';
+            alert(`❌ ${mensaje}`);
           }
         });
     }
   }
 
   cancelar(): void {
+    this.formulario.reset();
+    this.mostrarErrores = false;
     this.onCancelado.emit();
   }
 
@@ -313,8 +366,12 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   }
 
   getNombreError(): string {
-    if (this.nombre?.errors?.['required']) return 'El nombre es requerido';
-    if (this.nombre?.errors?.['minlength']) return 'El nombre debe tener al menos 3 caracteres';
+    if (this.nombre?.errors?.['required']) {
+      return 'El nombre es requerido';
+    }
+    if (this.nombre?.errors?.['minlength']) {
+      return 'El nombre debe tener al menos 3 caracteres';
+    }
     return '';
   }
 }

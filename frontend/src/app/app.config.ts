@@ -12,13 +12,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     providePrimeNG({
       theme: {
-        preset: Aura // Define el preset visual Aura como tema por defecto de PrimeNG
-      }
+        preset: Aura 
     }),
     provideHttpClient(
       withInterceptors([
         (req, next) => {
-          // Interceptor funcional para adjuntar el JWT en cada petición saliente hacia la API
+          
           const authStore = inject(AuthStore);
           const token = authStore.obtenerToken();
           

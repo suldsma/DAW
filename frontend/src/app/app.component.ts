@@ -12,6 +12,5 @@ import { ToastModule } from 'primeng/toast';
   providers: [MessageService] 
 })
 export class AppComponent {
-  // Título de la aplicación utilizando la API de Signals para reactividad fluida
   title = signal('Gestión de Proyectos'); 
 }

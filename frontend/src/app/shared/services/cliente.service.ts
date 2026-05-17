@@ -32,12 +32,10 @@ export class ClienteService {
     return this.apiService.get<Cliente[]>(this.endpoint, params);
   }
 
-  // Obtener un cliente específico
   obtenerCliente(id: number): Observable<Cliente> {
     return this.apiService.get<Cliente>(`${this.endpoint}/${id}`);
   }
 
-  // Crear nuevo cliente
   crearCliente(data: CreateClienteRequest): Observable<Cliente> {
     return this.apiService.post<ApiResponse<Cliente>>(this.endpoint, data).pipe(
       map(response => {
@@ -49,7 +47,6 @@ export class ClienteService {
     );
   }
 
-  // Actualizar cliente
   actualizarCliente(
     id: number,
     data: UpdateClienteRequest

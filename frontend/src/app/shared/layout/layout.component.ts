@@ -1,13 +1,13 @@
 // src/app/shared/layout/layout.component.ts
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit, OnDestroy, HostListener, ElementRef } from '@angular/core';
+import { RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { Usuario } from '../models/index';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-layout',
@@ -21,30 +21,40 @@ export class LayoutComponent implements OnInit, OnDestroy {
   menuAbierto = false;
   sidebarAbierto = true;
 
-  // Subject para desuscribirse automáticamente
   private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private elementRef: ElementRef
   ) {}
 
   ngOnInit(): void {
-    // Se suscribe CON takeUntil para desuscribirse automáticamente
     this.authService.usuario$
       .pipe(takeUntil(this.destroy$))
       .subscribe(usuario => {
         this.usuario = usuario;
       });
+
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.menuAbierto = false;
+      });
   }
 
-  // IMPORTANTE: Desuscribirse cuando el componente se destruye
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  toggleMenu(): void {
+  toggleMenu(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation(); 
+    }
     this.menuAbierto = !this.menuAbierto;
   }
 
@@ -53,8 +63,16 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   cerrarSesion(): void {
+    this.menuAbierto = false;
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  @HostListener('document:click', ['$event'])
+  clickAfuera(event: MouseEvent): void {
+    if (this.menuAbierto && !this.elementRef.nativeElement.contains(event.target)) {
+      this.menuAbierto = false;
+    }
   }
 
   get nombreUsuario(): string {

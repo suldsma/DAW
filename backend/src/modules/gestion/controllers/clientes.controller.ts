@@ -80,10 +80,11 @@ export class ClientesController {
     @ApiQuery({ name: 'estado', required: false, enum: EstadosClientesEnum })
     @ApiQuery({ name: 'nombre', required: false, description: 'Filtrar por nombre parcial' })
     async obtenerClientes(
-        @Query('estado') estado?: EstadosClientesEnum,
+        @Query('estado') estado?: string,
         @Query('nombre') nombre?: string
     ): Promise<ListClienteDTO[]> {
-        return await this.clientesService.obtenerClientes(estado, nombre);
+        
+        return await this.clientesService.obtenerClientes(estado as EstadosClientesEnum, nombre);
     }
 
     @Get(':id')
@@ -93,6 +94,7 @@ export class ClientesController {
     async obtenerClientePorId(
         @Param('id', ParseIntPipe) id: number
     ): Promise<ListClienteDTO> {
-        return await this.clientesService.obtenerClientePorId(id);
+        
+        return await this.clientesService.obtenerCliente(id);
     }
 }

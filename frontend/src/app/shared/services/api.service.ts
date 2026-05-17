@@ -8,16 +8,12 @@ import { ErrorResponse } from '../models/index';
   providedIn: 'root'
 })
 export class ApiService {
-  // ✅ Apuntamos con éxito al dominio y puerto real de tu Backend Node.js
   private apiUrl = 'http://localhost:3000/api/v1';
   private timeoutMs = 30000;
   private retryCount = 1;
 
   constructor(private http: HttpClient) {}
 
-  // =========================================================================
-  // GET REQUESTS
-  // =========================================================================
   get<T>(endpoint: string, params?: any): Observable<T> {
     const url = `${this.apiUrl}${endpoint}`;
     let httpParams = new HttpParams();
@@ -37,9 +33,6 @@ export class ApiService {
     );
   }
 
-  // =========================================================================
-  // POST REQUESTS
-  // =========================================================================
   post<T>(endpoint: string, data: any = {}): Observable<T> {
     const url = `${this.apiUrl}${endpoint}`;
     return this.http.post<T>(url, data).pipe(
@@ -48,9 +41,6 @@ export class ApiService {
     );
   }
 
-  // =========================================================================
-  // PUT REQUESTS
-  // =========================================================================
   put<T>(endpoint: string, data: any = {}): Observable<T> {
     const url = `${this.apiUrl}${endpoint}`;
     return this.http.put<T>(url, data).pipe(
@@ -59,9 +49,6 @@ export class ApiService {
     );
   }
 
-  // =========================================================================
-  // DELETE REQUESTS
-  // =========================================================================
   delete<T>(endpoint: string): Observable<T> {
     const url = `${this.apiUrl}${endpoint}`;
     return this.http.delete<T>(url).pipe(
@@ -70,9 +57,6 @@ export class ApiService {
     );
   }
 
-  // =========================================================================
-  // BLOB REQUESTS (para descargas)
-  // =========================================================================
   getBlob(endpoint: string): Observable<Blob> {
     const url = `${this.apiUrl}${endpoint}`;
     return this.http.get(url, { responseType: 'blob' }).pipe(
@@ -81,9 +65,6 @@ export class ApiService {
     );
   }
 
-  // =========================================================================
-  // ERROR HANDLING
-  // =========================================================================
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'Error desconocido';
     let statusCode = error.status;
