@@ -1,0 +1,128 @@
+<div class="proyectos-container">
+  <div class="page-header">
+    <h1>Gestión de Proyectos</h1>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="exportarCSV()" type="button">
+        💾 Exportar CSV
+      </button>
+      <button class="btn btn-primary" (click)="abrirFormulario()" type="button">
+        ✚ Crear Proyecto
+      </button>
+    </div>
+  </div>
+
+  <div class="filtros-section">
+    <div class="filtro-group">
+      <label for="filtroNombre">Buscar por nombre:</label>
+      <input
+        id="filtroNombre"
+        type="text"
+        [(ngModel)]="filtroNombre"
+        placeholder="Escribe para buscar..."
+        (input)="aplicarFiltros()"
+        class="input-text">
+    </div>
+
+    <div class="filtro-group">
+      <label for="filtroEstado">Filtrar por estado:</label>
+      <select
+        id="filtroEstado"
+        [(ngModel)]="filtroEstado"
+        (change)="aplicarFiltros()"
+        class="input-select">
+        <option *ngFor="let opt of estadoOptions" [value]="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+    </div>
+
+    <button
+      class="btn btn-secondary"
+      (click)="cargarProyectos()"
+      type="button">
+      🔄 Actualizar
+    </button>
+  </div>
+
+  <div class="tabla-container">
+    <div *ngIf="cargando" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando proyectos...</p>
+    </div>
+
+    <div *ngIf="!cargando && proyectosFiltrados.length === 0" class="empty-state">
+      <p>📭 No hay proyectos registrados</p>
+    </div>
+
+    <table *ngIf="!cargando && proyectosFiltrados.length > 0" class="tabla">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Cliente</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let proyecto of proyectosFiltrados">
+          <td class="col-id">{{ proyecto.id }}</td>
+          <td class="col-nombre">{{ proyecto.nombre }}</td>
+          <td class="col-cliente">{{ proyecto.clienteNombre }}</td>
+          <td class="col-estado">
+            <span class="badge" [style.background-color]="proyecto.estadoColor">
+              {{ proyecto.estadoTexto }}
+            </span>
+          </td>
+          <td class="col-acciones">
+            <a
+              [routerLink]="['/proyectos', proyecto.id]"
+              class="btn-icon btn-view"
+              title="Ver detalle">
+              👁️
+            </a>
+            <button
+              class="btn-icon btn-edit"
+              (click)="editarProyecto(proyecto)"
+              title="Editar"
+              type="button">
+              ✏️
+            </button>
+            <button
+              class="btn-icon btn-toggle"
+              (click)="cambiarEstado(proyecto)"
+              title="Cambiar estado"
+              type="button">
+              🔄
+            </button>
+            <button
+              class="btn-icon btn-delete"
+              (click)="eliminarProyecto(proyecto)"
+              title="Eliminar"
+              type="button">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ proyectoEditando ? 'Editar Proyecto' : 'Crear Proyecto' }}</h2>
+        <button class="btn-close" (click)="cerrarFormulario()" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <app-proyecto-form
+          [proyecto]="proyectoEditando"
+          [clientes]="clientes"
+          (onGuardado)="onFormularioGuardado()"
+          (onCancelado)="cerrarFormulario()">
+        </app-proyecto-form>
+      </div>
+    </div>
+  </div>
+</div>

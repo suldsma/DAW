@@ -1,0 +1,39 @@
+<!-- src/app/modules/proyectos/pages/proyecto-detail.component.html -->
+
+<div class="proyecto-detail-container">
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando proyecto...</p>
+  </div>
+
+  <div *ngIf="!cargando && proyecto" class="proyecto-content">
+    <div class="header-detail">
+      <button class="btn-volver" (click)="volver()" type="button">← Volver</button>
+      <div class="header-info">
+        <h1>{{ proyecto.nombre }}</h1>
+        <div class="proyecto-meta">
+          <span class="meta-item">
+            Cliente: <strong>{{ proyecto.cliente?.nombre || 'Interno' }}</strong>
+          </span>
+          <span class="meta-item">
+            Estado: <span class="badge" [style.background-color]="estadoColor">
+              {{ estadoTexto }}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kanban-section" *ngIf="tareasKanban">
+      <app-kanban-board
+        [tareasKanban]="tareasKanban"
+        [idProyecto]="idProyecto"
+        (onTareaGuardada)="onTareaGuardada()">
+      </app-kanban-board>
+    </div>
+  </div>
+
+  <div *ngIf="!cargando && !proyecto" class="error-message">
+    <p>Error al cargar el proyecto</p>
+  </div>
+</div>

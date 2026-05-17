@@ -1,74 +1,34 @@
 // BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/UPDATE-PROYECTO.DTO.TS
-// ✅ VERSIÓN CORREGIDA Y MEJORADA
 
-import {
-    ApiProperty,
-    PartialType
-} from "@nestjs/swagger";
-
-import {
-    IsEnum,
-    IsOptional,
-    IsNumber
-} from "class-validator";
-
+import { ApiProperty, PartialType } from "@nestjs/swagger";
+import { IsEnum, IsOptional, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
 
-// DTO base
 import { CreateProyectoDto } from "./create-proyecto.dto";
-
-// Enum
 import { EstadosProyectosEnum } from "../../enums/estados-proyectos.enum";
 
-/**
- * =====================================================
- * UPDATE PROYECTO DTO
- * =====================================================
- * Todos los campos heredados desde CreateProyectoDto
- * pasan a ser opcionales automáticamente.
- */
-export class UpdateProyectoDto extends PartialType(
-    CreateProyectoDto
-) {
+export class UpdateProyectoDto extends PartialType(CreateProyectoDto) {
 
-    /**
-     * =====================================================
-     * ESTADO
-     * =====================================================
-     */
     @ApiProperty({
         enum: EstadosProyectosEnum,
         example: EstadosProyectosEnum.ACTIVO,
-        description: 'Nuevo estado del proyecto',
+        description: 'Nuevo estado del proyecto para el flujo de trabajo',
         required: false
     })
     @IsOptional()
-    @IsEnum(
-        EstadosProyectosEnum,
-        {
-            message: 'Estado de proyecto inválido'
-        }
-    )
+    @IsEnum(EstadosProyectosEnum, {
+        message: 'El estado proporcionado no es un estado de proyecto válido'
+    })
     estado?: EstadosProyectosEnum;
 
-    /**
-     * =====================================================
-     * ID CLIENTE
-     * =====================================================
-     */
     @ApiProperty({
         example: 2,
-        description: 'ID del nuevo cliente asociado',
+        description: 'ID del nuevo cliente asociado. Enviar null si pasa a ser proyecto interno.',
         required: false,
         nullable: true
     })
     @IsOptional()
     @Type(() => Number)
-    @IsNumber(
-        {},
-        {
-            message: 'El ID del cliente debe ser un número'
-        }
-    )
+    @IsNumber({}, { message: 'El ID del cliente debe ser un valor numérico' })
     idCliente?: number;
 }

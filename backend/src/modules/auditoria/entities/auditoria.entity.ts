@@ -1,4 +1,3 @@
-// BACKEND/SRC/MODULES/AUDITORIA/ENTITIES/AUDITORIA.ENTITY.TS
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, Index } from "typeorm";
 
 export enum TipoEntidadEnum {
@@ -15,35 +14,54 @@ export enum TipoOperacionEnum {
 }
 
 @Entity({ name: "auditorias" })
-@Index(['idEntidad', 'tipoEntidad'])
+// Índices compuestos para optimizar las búsquedas más frecuentes del historial
+@Index(['tipoEntidad', 'idEntidad'])
 @Index(['idUsuario', 'fechaOperacion'])
 export class Auditoria {
 
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ type: 'enum', enum: TipoEntidadEnum })
+    @Column({ 
+        type: 'varchar', // Se usa varchar en lugar de enum nativo de Postgres para facilitar migraciones y cambios futuros
+        length: 50
+    })
     tipoEntidad!: TipoEntidadEnum;
 
-    @Column()
+    @Column({ name: 'id_entidad' })
     idEntidad!: number;
 
-    @Column({ type: 'enum', enum: TipoOperacionEnum })
+    @Column({ 
+        type: 'varchar', 
+        length: 20 
+    })
     tipoOperacion!: TipoOperacionEnum;
 
-    @Column()
+    @Column({ name: 'id_usuario' })
     idUsuario!: number;
 
-    @Column()
+    @Column({ 
+        name: 'nombre_usuario',
+        length: 100 
+    })
     nombreUsuario!: string;
 
-    @Column({ type: 'text', nullable: true })
-    datosCambio?: string; // JSON con los cambios realizados
+    @Column({ 
+        type: 'jsonb', // jsonb en Postgres permite indexar y consultar subpropiedades eficientemente
+        nullable: true,
+        comment: 'Estado previo y posterior del registro'
+    })
+    datosCambio?: any;
 
-    @Column({ type: 'text', nullable: true })
+    @Column({ 
+        type: 'text', 
+        nullable: true 
+    })
     detalles?: string;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ 
+        name: 'fecha_operacion',
+        precision: 0 
+    })
     fechaOperacion!: Date;
-
 }

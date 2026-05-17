@@ -1,23 +1,37 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { routes } from './app.routes';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor'; // ✅ IMPORTAR
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { AuthStore } from './auth/auth-store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes), 
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes),
+    providePrimeNG({
+      theme: {
+        preset: Aura // Define el preset visual Aura como tema por defecto de PrimeNG
+      }
+    }),
     provideHttpClient(
-      withInterceptorsFromDi() // ✅ HABILITAR SISTEMA DE INTERCEPTORES
-    ),
-    // ✅ REGISTRAR AUTHINTERCEPTOR
-    { 
-      provide: HTTP_INTERCEPTORS, 
-      useClass: AuthInterceptor, 
-      multi: true 
-    },
-    provideAnimationsAsync()
+      withInterceptors([
+        (req, next) => {
+          // Interceptor funcional para adjuntar el JWT en cada petición saliente hacia la API
+          const authStore = inject(AuthStore);
+          const token = authStore.obtenerToken();
+          
+          if (token) {
+            req = req.clone({
+              setHeaders: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+          }
+          return next(req);
+        }
+      ])
+    )
   ]
 };

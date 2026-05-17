@@ -1,4 +1,3 @@
-// BACKEND/SRC/MODULES/AUDITORIA/SERVICES/AUDITORIA.SERVICE.TS (CORREGIDO)
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,9 +11,6 @@ export class AuditoriaService {
         private readonly repository: Repository<Auditoria>
     ) { }
 
-    /**
-     * Registrar una operación en la auditoría
-     */
     async registrarCambio(
         tipoEntidad: TipoEntidadEnum,
         idEntidad: number,
@@ -24,35 +20,29 @@ export class AuditoriaService {
         datosCambio?: any,
         detalles?: string
     ): Promise<void> {
-        // ✅ CORREGIDO: No usar null, usar undefined
         const auditoria = this.repository.create({
             tipoEntidad,
             idEntidad,
             tipoOperacion,
             idUsuario,
             nombreUsuario,
-            datosCambio: datosCambio ? JSON.stringify(datosCambio) : undefined,
+            datosCambio: datosCambio || undefined, 
             detalles: detalles || undefined,
-        } as any); // Usar 'as any' si TypeORM lo requiere
+        });
 
+        // Fire and forget o await según la prioridad. Aquí bloqueamos para asegurar el log.
         await this.repository.save(auditoria);
     }
 
-    /**
-     * Obtener historial de cambios de una entidad
-     */
-    async obtenerHistorial(tipoEntidad: TipoEntidadEnum, idEntidad: number) {
+    async obtenerHistorial(tipoEntidad: TipoEntidadEnum, idEntidad: number): Promise<Auditoria[]> {
         return await this.repository.find({
             where: { tipoEntidad, idEntidad },
             order: { fechaOperacion: 'DESC' },
-            take: 100 // Últimos 100 cambios
+            take: 100 // Capado hardcoded por rendimiento para evitar respuestas masivas
         });
     }
 
-    /**
-     * Obtener historial de cambios de un usuario
-     */
-    async obtenerHistorialPorUsuario(idUsuario: number) {
+    async obtenerHistorialPorUsuario(idUsuario: number): Promise<Auditoria[]> {
         return await this.repository.find({
             where: { idUsuario },
             order: { fechaOperacion: 'DESC' },
@@ -60,14 +50,10 @@ export class AuditoriaService {
         });
     }
 
-    /**
-     * Obtener historial completo del sistema
-     */
-    async obtenerHistorialGeneral(limite: number = 100) {
+    async obtenerHistorialGeneral(limite: number = 100): Promise<Auditoria[]> {
         return await this.repository.find({
             order: { fechaOperacion: 'DESC' },
             take: limite
         });
     }
-
 }

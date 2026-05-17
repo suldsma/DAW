@@ -1,12 +1,14 @@
 // BACKEND/SRC/MODULES/ESTADISTICAS/CONTROLLERS/ESTADISTICAS.CONTROLLER.TS
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { EstadisticasService } from '../services/estadisticas.service';
-import { AuthGuard } from '../../auth/guards/auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Estadísticas')
-@ApiBearerAuth()
-@UseGuards(AuthGuard)
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+
+import { EstadisticasService } from '../services/estadisticas.service';
+import { JwtAuthGuard } from '../../auth/guards/auth.guard';
+
+@ApiTags('Reportes y Estadísticas')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @Controller('estadisticas')
 export class EstadisticasController {
 
@@ -14,6 +16,7 @@ export class EstadisticasController {
 
     @Get('resumen')
     @ApiOperation({ summary: 'Obtener métricas generales del sistema' })
+    @ApiResponse({ status: 200, description: 'Resumen de proyectos activos, finalizados y tareas.' })
     async obtenerResumen() {
         return await this.estadisticasService.obtenerResumenGeneral();
     }
@@ -21,7 +24,7 @@ export class EstadisticasController {
     @Get('por-cliente')
     @ApiOperation({ 
         summary: 'Estadísticas por cliente',
-        description: 'Incluye cantidad de proyectos, tareas completadas, en progreso, etc.'
+        description: 'Incluye cantidad total de proyectos por cada cliente registrado.'
     })
     async obtenerEstadisticasPorCliente() {
         return await this.estadisticasService.obtenerEstadisticasPorCliente();
@@ -30,7 +33,7 @@ export class EstadisticasController {
     @Get('por-proyecto')
     @ApiOperation({ 
         summary: 'Estadísticas detalladas por proyecto',
-        description: 'Porcentaje de completitud, tareas pendientes, finalizadas, etc.'
+        description: 'Muestra el porcentaje de avance basándose en tareas finalizadas vs pendientes.'
     })
     async obtenerEstadisticasPorProyecto() {
         return await this.estadisticasService.obtenerEstadisticasPorProyecto();
@@ -39,7 +42,7 @@ export class EstadisticasController {
     @Get('proximos-a-completarse')
     @ApiOperation({ 
         summary: 'Proyectos próximos a completarse',
-        description: 'Proyectos activos con más del 80% de tareas completadas'
+        description: 'Proyectos con alta tasa de tareas en estado FINALIZADA.'
     })
     async obtenerProyectosProximos() {
         return await this.estadisticasService.obtenerProyectosProximosACompletarse();
@@ -47,11 +50,10 @@ export class EstadisticasController {
 
     @Get('atrasados')
     @ApiOperation({ 
-        summary: 'Proyectos atrasados',
-        description: 'Proyectos activos con menos del 20% de tareas completadas'
+        summary: 'Proyectos con bajo progreso',
+        description: 'Proyectos activos que requieren atención por tener pocas tareas completadas.'
     })
     async obtenerProyectosAtrasados() {
         return await this.estadisticasService.obtenerProyectosAtrasados();
     }
-
 }

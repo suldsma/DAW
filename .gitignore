@@ -1,4 +1,5 @@
 .angular/cache
 node_modules/
 dist/
-.env
+.envfrontend/.angular/
+backend/coverage/

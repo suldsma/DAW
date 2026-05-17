@@ -1,86 +1,34 @@
 // BACKEND/SRC/MODULES/ESTADISTICAS/ESTADISTICAS.MODULE.TS
 
 import { Module } from '@nestjs/common';
-
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-// Controller
-import { EstadisticasController }
-    from './controllers/estadisticas.controller';
+import { EstadisticasController } from './controllers/estadisticas.controller';
+import { EstadisticasService } from './services/estadisticas.service';
 
-// Service
-import { EstadisticasService }
-    from './services/estadisticas.service';
+import { Proyecto } from '../gestion/entities/proyecto.entity';
+import { Tarea } from '../gestion/entities/tarea.entity';
+import { Cliente } from '../gestion/entities/cliente.entity';
 
-// Entidades
-import { Proyecto }
-    from '../gestion/entities/proyecto.entity';
-
-import { Tarea }
-    from '../gestion/entities/tarea.entity';
-
-import { Cliente }
-    from '../gestion/entities/cliente.entity';
-
-import { ComentarioTarea }
-    from '../gestion/entities/comentario-tarea.entity';
-
-// Módulos
-import { GestionModule }
-    from '../gestion/gestion.module';
+import { GestionModule } from '../gestion/gestion.module';
+import { AuthModule } from '../auth/auth.module'; 
 
 @Module({
-
     imports: [
-
-        /**
-         * =====================================================
-         * TYPEORM
-         * =====================================================
-         * Entidades necesarias para estadísticas
-         */
         TypeOrmModule.forFeature([
             Proyecto,
             Tarea,
-            Cliente,
-            ComentarioTarea
+            Cliente
         ]),
-
-        /**
-         * =====================================================
-         * GESTIÓN MODULE
-         * =====================================================
-         * Acceso a:
-         * - ClientesService
-         * - ProyectosService
-         * - TareasService
-         */
-        GestionModule
+        GestionModule, // Provee los servicios base necesarios para contar registros
+        AuthModule // Permite el uso global del JwtAuthGuard en los controladores
     ],
-
-    /**
-     * =====================================================
-     * CONTROLLERS
-     * =====================================================
-     */
     controllers: [
         EstadisticasController
     ],
-
-    /**
-     * =====================================================
-     * PROVIDERS
-     * =====================================================
-     */
     providers: [
         EstadisticasService
     ],
-
-    /**
-     * =====================================================
-     * EXPORTS
-     * =====================================================
-     */
     exports: [
         EstadisticasService
     ]

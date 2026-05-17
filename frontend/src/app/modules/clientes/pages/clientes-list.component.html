@@ -1,0 +1,119 @@
+<!-- src/app/modules/clientes/pages/clientes-list.component.html -->
+
+<div class="clientes-container">
+  <div class="page-header">
+    <h1>Gestión de Clientes</h1>
+    <button class="btn btn-primary" (click)="abrirFormulario()" type="button">
+      ✚ Agregar Cliente
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-section">
+    <div class="filtro-group">
+      <label for="filtroNombre">Buscar por nombre:</label>
+      <input
+        id="filtroNombre"
+        type="text"
+        [(ngModel)]="filtroNombre"
+        placeholder="Escribe para buscar..."
+        (input)="aplicarFiltros()"
+        class="input-text">
+    </div>
+
+    <div class="filtro-group">
+      <label for="filtroEstado">Filtrar por estado:</label>
+      <select
+        id="filtroEstado"
+        [(ngModel)]="filtroEstado"
+        (change)="aplicarFiltros()"
+        class="input-select">
+        <option *ngFor="let opt of estadoOptions" [value]="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+    </div>
+
+    <button
+      class="btn btn-secondary"
+      (click)="cargarClientes()"
+      type="button">
+      🔄 Actualizar
+    </button>
+  </div>
+
+  <!-- Tabla de Clientes -->
+  <div class="tabla-container">
+    <div *ngIf="cargando" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando clientes...</p>
+    </div>
+
+    <div *ngIf="!cargando && clientesFiltrados.length === 0" class="empty-state">
+      <p>📭 No hay clientes registrados</p>
+    </div>
+
+    <table *ngIf="!cargando && clientesFiltrados.length > 0" class="tabla">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cliente of clientesFiltrados">
+          <td class="col-id">{{ cliente.id }}</td>
+          <td class="col-nombre">{{ cliente.nombre }}</td>
+          <td class="col-estado">
+            <span class="badge" [style.background-color]="obtenerColorEstado(cliente.estado)">
+              {{ obtenerTextoEstado(cliente.estado) }}
+            </span>
+          </td>
+          <td class="col-acciones">
+            <button
+              class="btn-icon btn-edit"
+              (click)="editarCliente(cliente)"
+              title="Editar"
+              type="button">
+              ✏️
+            </button>
+            <button
+              class="btn-icon btn-toggle"
+              (click)="cambiarEstado(cliente)"
+              title="Cambiar estado"
+              type="button">
+              🔄
+            </button>
+            <button
+              class="btn-icon btn-delete"
+              (click)="eliminarCliente(cliente)"
+              title="Eliminar"
+              type="button">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal de Formulario -->
+  <div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ clienteEditando ? 'Editar Cliente' : 'Crear Cliente' }}</h2>
+        <button class="btn-close" (click)="cerrarFormulario()" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <app-cliente-form
+          [cliente]="clienteEditando"
+          (onGuardado)="onFormularioGuardado()"
+          (onCancelado)="cerrarFormulario()">
+        </app-cliente-form>
+      </div>
+    </div>
+  </div>
+</div>

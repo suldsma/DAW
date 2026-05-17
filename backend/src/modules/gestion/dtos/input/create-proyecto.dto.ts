@@ -1,8 +1,6 @@
 // BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/CREATE-PROYECTO.DTO.TS
-// ✅ VERSIÓN CORREGIDA Y MEJORADA
 
 import { ApiProperty } from "@nestjs/swagger";
-
 import {
     IsNotEmpty,
     IsNumber,
@@ -11,60 +9,31 @@ import {
     MaxLength,
     MinLength
 } from "class-validator";
-
 import { Transform, Type } from "class-transformer";
 
 export class CreateProyectoDto {
 
-    /**
-     * =====================================================
-     * NOMBRE
-     * =====================================================
-     */
     @ApiProperty({
-        example: 'Sistema Contable',
-        description: 'Nombre único del proyecto',
+        example: 'Implementación ERP Fase 1',
+        description: 'Nombre descriptivo y único para identificar el proyecto',
         minLength: 3,
         maxLength: 150
     })
-    @Transform(({ value }) =>
-        typeof value === 'string'
-            ? value.trim()
-            : value
-    )
-    @IsString({
-        message: 'El nombre debe ser una cadena de texto'
-    })
-    @IsNotEmpty({
-        message: 'El nombre del proyecto es obligatorio'
-    })
-    @MinLength(3, {
-        message: 'El nombre debe tener al menos 3 caracteres'
-    })
-    @MaxLength(150, {
-        message: 'El nombre no puede superar los 150 caracteres'
-    })
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+    @IsString({ message: 'El nombre debe ser una cadena de texto' })
+    @IsNotEmpty({ message: 'El nombre del proyecto es obligatorio' })
+    @MinLength(3, { message: 'El nombre debe tener al menos 3 caracteres' })
+    @MaxLength(150, { message: 'El nombre no puede exceder los 150 caracteres' })
     nombre!: string;
 
-    /**
-     * =====================================================
-     * ID CLIENTE
-     * =====================================================
-     * Opcional para proyectos internos
-     */
     @ApiProperty({
         example: 1,
-        description: 'ID del cliente asociado al proyecto',
+        description: 'ID del cliente (procedente de la tabla clientes). Opcional para proyectos internos.',
         required: false,
         nullable: true
     })
     @IsOptional()
-    @Type(() => Number)
-    @IsNumber(
-        {},
-        {
-            message: 'El ID del cliente debe ser un número'
-        }
-    )
+    @Type(() => Number) // Convierte a number si el dato llega como string desde multipart/form-data o query
+    @IsNumber({}, { message: 'El ID del cliente debe ser un valor numérico válido' })
     idCliente?: number;
 }

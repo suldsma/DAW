@@ -1,0 +1,118 @@
+<!-- src/app/modules/estadisticas/pages/estadisticas.component.html -->
+
+<div class="estadisticas-container">
+  <h1>Estadísticas del Sistema</h1>
+
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando estadísticas...</p>
+  </div>
+
+  <ng-container *ngIf="!cargando && resumen">
+    <!-- Tarjetas de Resumen -->
+    <div class="resumen-grid">
+      <div class="resumen-card">
+        <div class="card-icon">👥</div>
+        <h3>Clientes</h3>
+        <p class="value">{{ resumen.resumen.totalClientes }}</p>
+        <p class="subtext">{{ resumen.resumen.clientesActivos }} activos</p>
+      </div>
+
+      <div class="resumen-card">
+        <div class="card-icon">📋</div>
+        <h3>Proyectos Activos</h3>
+        <p class="value">{{ resumen.resumen.proyectosActivos }}</p>
+        <p class="subtext">{{ resumen.resumen.proyectosFinalizados }} finalizados</p>
+      </div>
+
+      <div class="resumen-card">
+        <div class="card-icon">✓</div>
+        <h3>Tareas</h3>
+        <p class="value">{{ resumen.resumen.tareasPendientes }}</p>
+        <p class="subtext">{{ resumen.resumen.tareasFinalizadas }} finalizadas</p>
+      </div>
+
+      <div class="resumen-card">
+        <div class="card-icon">📊</div>
+        <h3>Avance General</h3>
+        <p class="value">{{ resumen.porcentajes.tareasCompletadas }}%</p>
+        <p class="subtext">Tareas completadas</p>
+      </div>
+    </div>
+
+    <!-- Tabla Estadísticas por Cliente -->
+    <div class="tabla-section">
+      <h2>Estadísticas por Cliente</h2>
+      <div class="tabla-container">
+        <table *ngIf="estadisticasPorCliente.length > 0" class="tabla">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Proyectos</th>
+              <th>Activos</th>
+              <th>Tareas</th>
+              <th>Finalizadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let stat of estadisticasPorCliente">
+              <td class="col-nombre">{{ stat.clienteNombre }}</td>
+              <td>{{ stat.cantidadProyectos }}</td>
+              <td>
+                <span class="badge" [style.background-color]="stat.proyectosActivos > 0 ? '#10b981' : '#ddd'">
+                  {{ stat.proyectosActivos }}
+                </span>
+              </td>
+              <td>{{ stat.cantidadTareas }}</td>
+              <td>
+                <span class="badge" style="background-color: #3b82f6">
+                  {{ stat.tareasFinalizadas }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div *ngIf="estadisticasPorCliente.length === 0" class="empty">
+          No hay datos de clientes
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Estadísticas por Proyecto -->
+    <div class="tabla-section">
+      <h2>Estadísticas por Proyecto</h2>
+      <div class="tabla-container">
+        <table *ngIf="estadisticasPorProyecto.length > 0" class="tabla">
+          <thead>
+            <tr>
+              <th>Proyecto</th>
+              <th>Cliente</th>
+              <th>Tareas</th>
+              <th>Progreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let stat of estadisticasPorProyecto">
+              <td class="col-nombre">{{ stat.proyectoNombre }}</td>
+              <td class="col-cliente">{{ stat.cliente }}</td>
+              <td class="col-center">{{ stat.totalTareas }}</td>
+              <td>
+                <div class="progreso-bar">
+                  <div
+                    class="progreso-fill"
+                    [style.width.%]="stat.porcentajeCompletado"
+                    [style.background-color]="obtenerPorcentajeColor(stat.porcentajeCompletado)">
+                  </div>
+                </div>
+                <span class="progreso-text">{{ stat.porcentajeCompletado }}%</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div *ngIf="estadisticasPorProyecto.length === 0" class="empty">
+          No hay datos de proyectos
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

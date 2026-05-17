@@ -1,0 +1,121 @@
+<!-- src/app/auth/login/login.component.html -->
+
+<div class="login-container">
+  <div class="login-wrapper">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>SGP</h1>
+        <h2>Sistema de Gestión de Proyectos</h2>
+        <p>Ingresa tus credenciales para continuar</p>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="iniciarSesion()" class="login-form">
+        <!-- Mensaje de Error -->
+        <div class="error-message" *ngIf="mostrarErrores && mensajeError">
+          <span class="error-icon">⚠️</span>
+          {{ mensajeError }}
+        </div>
+
+        <!-- Campo Usuario -->
+        <div class="form-group">
+          <label for="nombre">Usuario</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              placeholder="Ingresa tu usuario"
+              class="form-input"
+              [class.input-error]="nombreInvalido"
+              [disabled]="cargando"
+              autocomplete="username">
+          </div>
+          <div class="field-error" *ngIf="nombreInvalido">
+            <span *ngIf="nombre?.errors?.['required']">El usuario es requerido</span>
+            <span *ngIf="nombre?.errors?.['minlength']">El usuario debe tener al menos 3 caracteres</span>
+          </div>
+        </div>
+
+        <!-- Campo Contraseña -->
+        <div class="form-group">
+          <label for="clave">Contraseña</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input
+              id="clave"
+              [type]="mostrarPassword ? 'text' : 'password'"
+              formControlName="clave"
+              placeholder="Ingresa tu contraseña"
+              class="form-input"
+              [class.input-error]="claveInvalida"
+              [disabled]="cargando"
+              autocomplete="current-password">
+            <button
+              type="button"
+              class="btn-toggle-password"
+              (click)="toggleMostrarPassword()"
+              [disabled]="cargando">
+              {{ mostrarPassword ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+          <div class="field-error" *ngIf="claveInvalida">
+            <span *ngIf="clave?.errors?.['required']">La contraseña es requerida</span>
+            <span *ngIf="clave?.errors?.['minlength']">La contraseña debe tener al menos 4 caracteres</span>
+          </div>
+        </div>
+
+        <!-- Botón Iniciar Sesión -->
+        <button
+          type="submit"
+          class="btn-login"
+          [disabled]="cargando || formulario.invalid">
+          <span *ngIf="!cargando">Iniciar Sesión</span>
+          <span *ngIf="cargando" class="loading-spinner">
+            <span class="spinner"></span> Ingresando...
+          </span>
+        </button>
+      </form>
+
+      <!-- Credenciales de Prueba -->
+      <div class="login-footer">
+        <p class="credentials-label">Credenciales de prueba:</p>
+        <div class="credentials">
+          <p><strong>Usuario:</strong> usuario</p>
+          <p><strong>Contraseña:</strong> clave</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lado Derecho - Info -->
+    <div class="login-info">
+      <div class="info-content">
+        <h3>Bienvenido</h3>
+        <p>Gestiona tus proyectos, clientes y tareas de forma sencilla y eficiente.</p>
+
+        <div class="features">
+          <div class="feature">
+            <span class="feature-icon">📋</span>
+            <h4>Proyectos</h4>
+            <p>Crea y gestiona todos tus proyectos</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">👥</span>
+            <h4>Clientes</h4>
+            <p>Organiza tus clientes y asociaciones</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">✓</span>
+            <h4>Tareas</h4>
+            <p>Controla el estado de tus tareas</p>
+          </div>
+        </div>
+
+        <div class="footer-text">
+          <p>© 2026 Sistema de Gestión de Proyectos</p>
+          <p>Trabajo Final Integrador - Desarrollo Web</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
