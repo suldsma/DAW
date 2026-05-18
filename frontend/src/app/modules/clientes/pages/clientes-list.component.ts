@@ -91,9 +91,14 @@ export class ClientesListComponent implements OnInit, OnDestroy {
     this.clienteEditando = null;
   }
 
-  // Recarga la lista completa cuando el formulario hijo emite que guardó con éxito
+  // Recarga la lista completa limpiando filtros para evitar el F5 manual
   onFormularioGuardado(): void {
     this.cerrarFormulario();
+    
+    // Limpiamos los filtros de búsqueda para que el cliente nuevo/editado se muestre sí o sí
+    this.filtroNombre = '';
+    this.filtroEstado = '';
+    
     this.cargarClientes();
   }
 

@@ -1,3 +1,5 @@
+// backend/src/modules/gestion/controllers/tareas.controller.ts
+
 import {
     Body,
     Controller,
@@ -29,6 +31,7 @@ import { CreateTareaDto } from '../dtos/input/create-tarea.dto';
 import { UpdateTareaDto } from '../dtos/input/update-tarea.dto';
 import { ListTareaDTO } from '../dtos/output/list-tarea.dto';
 import { EstadosTareasEnum } from '../enums/estados-tareas.enum';
+import { GetUser } from '../../auth/decorators/get-user.decorator';
 
 @ApiTags('Gestión - Tareas')
 @ApiBearerAuth('JWT-auth')
@@ -45,9 +48,10 @@ export class TareasController {
     @ApiCreatedResponse({ description: 'Tarea creada exitosamente' })
     async crearTarea(
         @Param('idProyecto', ParseIntPipe) idProyecto: number,
-        @Body() dto: CreateTareaDto
+        @Body() dto: CreateTareaDto,
+        @GetUser() usuario: any 
     ): Promise<{ id: number }> {
-        return await this.tareasService.crearTarea(dto, idProyecto);
+        return await this.tareasService.crearTarea(dto, idProyecto, usuario);
     }
 
     @Get('kanban/tablero')
@@ -87,10 +91,10 @@ export class TareasController {
     async actualizarTarea(
         @Param('idProyecto', ParseIntPipe) idProyecto: number,
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateTareaDto
+        @Body() dto: UpdateTareaDto,
+        @GetUser() usuario: any 
     ): Promise<void> {
-        // Valida que la tarea pertenezca al idProyecto antes de actualizar
-        await this.tareasService.actualizarTarea(id, dto);
+        await this.tareasService.actualizarTarea(id, dto, usuario);
     }
 
     @Delete(':id')
@@ -98,8 +102,10 @@ export class TareasController {
     @ApiOperation({ summary: 'Dar de baja una tarea (Baja Lógica)' })
     async eliminarTarea(
         @Param('idProyecto', ParseIntPipe) idProyecto: number,
-        @Param('id', ParseIntPipe) id: number
+        @Param('id', ParseIntPipe) id: number,
+        @GetUser() usuario: any 
     ): Promise<void> {
-        await this.tareasService.eliminarTarea(id);
+
+        await this.tareasService.eliminarTarea(id, usuario);
     }
 }

@@ -17,6 +17,9 @@ import { UpdateClienteDto } from "../dtos/input/update-cliente.dto";
 import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
 import { ProyectosService } from "./proyectos.service";
 
+import { AuditoriaService } from "../../auditoria/services/auditoria.service";
+import { TipoEntidadEnum, TipoOperacionEnum } from "../../auditoria/entities/auditoria.entity";
+
 @Injectable()
 export class ClientesService {
 
@@ -28,7 +31,9 @@ export class ClientesService {
         private readonly proyectoRepository: Repository<Proyecto>,
 
         @Inject(forwardRef(() => ProyectosService))
-        private readonly proyectosService: ProyectosService
+        private readonly proyectosService: ProyectosService,
+
+        private readonly auditoriaService: AuditoriaService
     ) { }
 
     private normalizarNombre(nombre: string): string {
@@ -93,7 +98,7 @@ export class ClientesService {
         });
     }
 
-    async crearCliente(dto: CreateClienteDto): Promise<{ id: number }> {
+    async crearCliente(dto: CreateClienteDto, usuarioActual: any): Promise<{ id: number }> {
         const nombreNormalizado = this.normalizarNombre(dto.nombre);
 
         if (await this.existeClientePorNombre(nombreNormalizado)) {
@@ -108,10 +113,19 @@ export class ClientesService {
         });
 
         const clienteGuardado = await this.repository.save(cliente);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.CLIENTE,
+            clienteGuardado.id,
+            TipoOperacionEnum.CREAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
+
         return { id: clienteGuardado.id };
     }
 
-    async actualizarCliente(id: number, dto: UpdateClienteDto): Promise<void> {
+    async actualizarCliente(id: number, dto: UpdateClienteDto, usuarioActual: any): Promise<void> {
         const cliente = await this.repository.findOne({ where: { id } });
 
         if (!cliente) {
@@ -133,7 +147,6 @@ export class ClientesService {
 
         if (dto.estado) {
             if (dto.estado === EstadosClientesEnum.BAJA && cliente.estado !== EstadosClientesEnum.BAJA) {
-                // CORREGIDO: Uso de la relación 'cliente' estructurada para TypeORM
                 const totalProyectos = await this.proyectoRepository.count({
                     where: { cliente: { id: id } }
                 });
@@ -150,11 +163,20 @@ export class ClientesService {
         }
 
         await this.repository.save(cliente);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.CLIENTE,
+            cliente.id,
+            TipoOperacionEnum.ACTUALIZAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
     async cambiarEstadoCliente(
         id: number,
-        nuevoEstado: EstadosClientesEnum
+        nuevoEstado: EstadosClientesEnum,
+        usuarioActual: any
     ): Promise<void> {
         const cliente = await this.repository.findOne({ where: { id } });
 
@@ -163,7 +185,6 @@ export class ClientesService {
         }
 
         if (nuevoEstado === EstadosClientesEnum.BAJA && cliente.estado !== EstadosClientesEnum.BAJA) {
-            // CORREGIDO: Uso de la relación 'cliente' estructurada para TypeORM
             const totalProyectos = await this.proyectoRepository.count({
                 where: { cliente: { id: id } }
             });
@@ -178,9 +199,17 @@ export class ClientesService {
 
         cliente.estado = nuevoEstado;
         await this.repository.save(cliente);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.CLIENTE,
+            cliente.id,
+            TipoOperacionEnum.ACTUALIZAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
-    async eliminarCliente(id: number): Promise<void> {
+    async eliminarCliente(id: number, usuarioActual: any): Promise<void> {
         const cliente = await this.repository.findOne({ where: { id } });
 
         if (!cliente) {
@@ -191,7 +220,6 @@ export class ClientesService {
             throw new BadRequestException('El cliente ya se encuentra dado de baja');
         }
 
-        // CORREGIDO: Uso de la relación 'cliente' estructurada para TypeORM
         const totalProyectos = await this.proyectoRepository.count({
             where: { cliente: { id: id } }
         });
@@ -204,6 +232,14 @@ export class ClientesService {
 
         cliente.estado = EstadosClientesEnum.BAJA;
         await this.repository.save(cliente);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.CLIENTE,
+            cliente.id,
+            TipoOperacionEnum.ELIMINAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
     async obtenerClientesActivos(): Promise<ListClienteDTO[]> {

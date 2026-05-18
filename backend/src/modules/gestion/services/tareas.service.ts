@@ -1,5 +1,3 @@
-// BACKEND/SRC/MODULES/GESTION/SERVICES/TAREAS.SERVICE.TS
-
 import {
     Injectable,
     NotFoundException,
@@ -19,6 +17,9 @@ import { UpdateTareaDto } from "../dtos/input/update-tarea.dto";
 import { ListTareaDTO } from "../dtos/output/list-tarea.dto";
 import { ProyectosService } from "./proyectos.service";
 
+import { AuditoriaService } from "../../auditoria/services/auditoria.service";
+import { TipoEntidadEnum, TipoOperacionEnum } from "../../auditoria/entities/auditoria.entity";
+
 @Injectable()
 export class TareasService {
 
@@ -27,7 +28,9 @@ export class TareasService {
         private readonly repository: Repository<Tarea>,
 
         @Inject(forwardRef(() => ProyectosService))
-        private readonly proyectosService: ProyectosService
+        private readonly proyectosService: ProyectosService,
+
+        private readonly auditoriaService: AuditoriaService
     ) { }
 
     private normalizarDescripcion(descripcion: string): string {
@@ -78,7 +81,7 @@ export class TareasService {
         return this.mapToListDto(tarea);
     }
 
-    async crearTarea(dto: CreateTareaDto, idProyecto: number): Promise<{ id: number }> {
+    async crearTarea(dto: CreateTareaDto, idProyecto: number, usuarioActual: any): Promise<{ id: number }> {
         await this.validarProyectoOperativo(idProyecto);
 
         const descripcionNormalizada = this.normalizarDescripcion(dto.descripcion);
@@ -91,10 +94,19 @@ export class TareasService {
         });
 
         const guardada = await this.repository.save(tarea);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.TAREA,
+            guardada.id,
+            TipoOperacionEnum.CREAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
+
         return { id: guardada.id };
     }
 
-    async actualizarTarea(id: number, dto: UpdateTareaDto): Promise<void> {
+    async actualizarTarea(id: number, dto: UpdateTareaDto, usuarioActual: any): Promise<void> {
         const tareaEntity = await this.repository.findOneBy({ id });
         if (!tareaEntity) throw new NotFoundException(`Tarea con ID ${id} no encontrada`);
 
@@ -108,9 +120,17 @@ export class TareasService {
         }
 
         await this.repository.save(tareaEntity);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.TAREA,
+            tareaEntity.id,
+            TipoOperacionEnum.ACTUALIZAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
-    async eliminarTarea(id: number): Promise<void> {
+    async eliminarTarea(id: number, usuarioActual: any): Promise<void> {
         const tarea = await this.repository.findOneBy({ id });
         if (!tarea) throw new NotFoundException(`Tarea con ID ${id} no encontrada`);
         
@@ -120,6 +140,14 @@ export class TareasService {
 
         tarea.estado = EstadosTareasEnum.BAJA;
         await this.repository.save(tarea);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.TAREA,
+            tarea.id,
+            TipoOperacionEnum.ELIMINAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
     async obtenerTareasKanban(idProyecto: number): Promise<Record<string, ListTareaDTO[]>> {

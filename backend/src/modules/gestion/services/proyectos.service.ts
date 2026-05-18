@@ -22,6 +22,9 @@ import { ListTareaDTO } from "../dtos/output/list-tarea.dto";
 import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
 import { ClientesService } from "./clientes.service";
 
+import { AuditoriaService } from "../../auditoria/services/auditoria.service";
+import { TipoEntidadEnum, TipoOperacionEnum } from "../../auditoria/entities/auditoria.entity";
+
 @Injectable()
 export class ProyectosService {
 
@@ -33,20 +36,15 @@ export class ProyectosService {
         private readonly clienteRepository: Repository<Cliente>,
 
         @Inject(forwardRef(() => ClientesService))
-        private readonly clientesService: ClientesService
+        private readonly clientesService: ClientesService,
+
+        private readonly auditoriaService: AuditoriaService
     ) { }
 
-    /**
-     * Normalizar nombre: remover espacios extras y laterales
-     */
     private normalizarNombre(nombre: string): string {
         return nombre.trim().replace(/\s+/g, ' ');
     }
 
-    /**
-     * Obtener todos los proyectos (con filtros opcionales)
-     * Por defecto, excluye proyectos con estado BAJA
-     */
     async obtenerProyectos(
         nombre?: string,
         estado?: EstadosProyectosEnum
@@ -57,7 +55,6 @@ export class ProyectosService {
             where.nombre = ILike(`%${nombre.trim()}%`);
         }
 
-        // Si no especifica estado, excluir automáticamente los dados de BAJA
         if (estado) {
             where.estado = estado;
         } else {
@@ -73,9 +70,6 @@ export class ProyectosService {
         return proyectos.map(proyecto => this.mapToListDto(proyecto));
     }
 
-    /**
-     * Obtener un proyecto por ID mapeando sus tareas activas
-     */
     async obtenerProyecto(id: number): Promise<ProyectoDTO> {
         const proyecto = await this.repository.findOne({
             where: { id },
@@ -86,7 +80,6 @@ export class ProyectosService {
             throw new NotFoundException(`Proyecto con ID ${id} no encontrado`);
         }
 
-        // Filtrar tareas que no estén en estado BAJA
         const tareasActivas = proyecto.tareas?.filter(
             tarea => tarea.estado !== EstadosTareasEnum.BAJA
         ) || [];
@@ -107,10 +100,6 @@ export class ProyectosService {
         return dto;
     }
 
-    /**
-     * Verificar si existe un proyecto con ese nombre (Case-Insensitive)
-     * Permite excluir un ID específico para procesos de actualización
-     */
     async existeProyectoPorNombre(
         nombre: string,
         excluyendoId?: number
@@ -126,21 +115,15 @@ export class ProyectosService {
         return await query.getExists();
     }
 
-    /**
-     * Crear un nuevo proyecto
-     * ✅ VALIDACIÓN: Solo se pueden asignar clientes en estado ACTIVO
-     */
-    async crearProyecto(dto: CreateProyectoDto): Promise<{ id: number }> {
+    async crearProyecto(dto: CreateProyectoDto, usuarioActual: any): Promise<{ id: number }> {
         const nombreNormalizado = this.normalizarNombre(dto.nombre);
 
-        // Verificar unicidad del nombre
         if (await this.existeProyectoPorNombre(nombreNormalizado)) {
             throw new ConflictException(
                 `Ya existe un proyecto con el nombre "${nombreNormalizado}"`
             );
         }
 
-        // ✅ VALIDACIÓN CRÍTICA: Si se asigna un cliente, debe estar ACTIVO obligatoriamente
         if (dto.idCliente) {
             const cliente = await this.clienteRepository.findOne({
                 where: { id: dto.idCliente }
@@ -154,7 +137,7 @@ export class ProyectosService {
 
             if (cliente.estado !== EstadosClientesEnum.ACTIVO) {
                 throw new BadRequestException(
-                    `No se puede asignar el cliente "${cliente.nombre}" porque está en estado "${cliente.estado}". ` +
+                    `No se puede assignar el cliente "${cliente.nombre}" porque está en estado "${cliente.estado}". ` +
                     `Solo se pueden asignar clientes en estado ACTIVO.`
                 );
             }
@@ -168,14 +151,19 @@ export class ProyectosService {
         });
 
         const proyectoGuardado = await this.repository.save(proyecto);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.PROYECTO,
+            proyectoGuardado.id,
+            TipoOperacionEnum.CREAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
+
         return { id: proyectoGuardado.id };
     }
 
-    /**
-     * Actualizar un proyecto existente
-     * ✅ VALIDACIÓN: Si se altera el cliente asignado, debe estar ACTIVO
-     */
-    async actualizarProyecto(id: number, dto: UpdateProyectoDto): Promise<void> {
+    async actualizarProyecto(id: number, dto: UpdateProyectoDto, usuarioActual: any): Promise<void> {
         const proyecto = await this.repository.findOne({
             where: { id },
             relations: { cliente: true }
@@ -185,7 +173,6 @@ export class ProyectosService {
             throw new NotFoundException(`Proyecto con ID ${id} no encontrado`);
         }
 
-        // Actualizar nombre y verificar duplicados si sufrió modificaciones
         if (dto.nombre?.trim()) {
             const nombreNormalizado = this.normalizarNombre(dto.nombre);
             
@@ -199,7 +186,6 @@ export class ProyectosService {
             proyecto.nombre = nombreNormalizado;
         }
 
-        // Actualizar cliente validando que el nuevo esté ACTIVO
         if (dto.idCliente !== undefined && dto.idCliente !== proyecto.idCliente) {
             if (dto.idCliente !== null) {
                 const cliente = await this.clienteRepository.findOne({
@@ -222,7 +208,6 @@ export class ProyectosService {
             proyecto.idCliente = dto.idCliente;
         }
 
-        // ✅ VALIDACIÓN: Restringir la reactivación si el proyecto ya fue dado de baja
         if (proyecto.estado === EstadosProyectosEnum.BAJA && 
             dto.estado === EstadosProyectosEnum.ACTIVO) {
             throw new BadRequestException(
@@ -235,14 +220,20 @@ export class ProyectosService {
         }
 
         await this.repository.save(proyecto);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.PROYECTO,
+            proyecto.id,
+            TipoOperacionEnum.ACTUALIZAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
-    /**
-     * Ciclar o cambiar explícitamente el estado de un proyecto
-     */
     async cambiarEstadoProyecto(
         id: number,
-        nuevoEstado: EstadosProyectosEnum
+        nuevoEstado: EstadosProyectosEnum,
+        usuarioActual: any
     ): Promise<void> {
         const proyecto = await this.repository.findOne({ where: { id } });
 
@@ -259,12 +250,17 @@ export class ProyectosService {
 
         proyecto.estado = nuevoEstado;
         await this.repository.save(proyecto);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.PROYECTO,
+            proyecto.id,
+            TipoOperacionEnum.ACTUALIZAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
-    /**
-     * Eliminación lógica de un proyecto (pasa a estado BAJA)
-     */
-    async eliminarProyecto(id: number): Promise<void> {
+    async eliminarProyecto(id: number, usuarioActual: any): Promise<void> {
         const proyecto = await this.repository.findOneBy({ id });
 
         if (!proyecto) {
@@ -277,12 +273,16 @@ export class ProyectosService {
 
         proyecto.estado = EstadosProyectosEnum.BAJA;
         await this.repository.save(proyecto);
+
+        await this.auditoriaService.registrarCambio(
+            TipoEntidadEnum.PROYECTO,
+            proyecto.id,
+            TipoOperacionEnum.ELIMINAR,
+            usuarioActual.sub,
+            usuarioActual.nombre
+        );
     }
 
-    /**
-     * Verificar si existen proyectos vinculados que no estén en BAJA
-     * ✅ Utilizado por ClientesService para bloquear la baja de clientes con proyectos
-     */
     async existeProyectoPorIdCliente(idCliente: number): Promise<boolean> {
         return await this.repository.exists({
             where: {
@@ -292,16 +292,10 @@ export class ProyectosService {
         });
     }
 
-    /**
-     * Contar proyectos activos o totales por estado (utilizado para estadísticas)
-     */
     async contarProyectosPorEstado(estado: EstadosProyectosEnum): Promise<number> {
         return await this.repository.countBy({ estado });
     }
 
-    /**
-     * Obtener listado de proyectos activos de un cliente en particular
-     */
     async obtenerProyectosCliente(idCliente: number): Promise<ListProyectoDTO[]> {
         const proyectos = await this.repository.find({
             where: {
@@ -315,9 +309,6 @@ export class ProyectosService {
         return proyectos.map(proyecto => this.mapToListDto(proyecto));
     }
 
-    /**
-     * Mapper helper: Convierte una entidad Proyecto a un ListProyectoDTO plano
-     */
     private mapToListDto(proyecto: Proyecto): ListProyectoDTO {
         const dto = new ListProyectoDTO();
         dto.id = proyecto.id;

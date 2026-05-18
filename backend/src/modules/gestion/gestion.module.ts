@@ -16,6 +16,7 @@ import { ProyectosService } from "./services/proyectos.service";
 import { TareasService } from "./services/tareas.service";
 
 import { AuthModule } from "../auth/auth.module";
+import { AuditoriaModule } from "../auditoria/auditoria.module"; 
 
 @Module({
     imports: [
@@ -24,7 +25,8 @@ import { AuthModule } from "../auth/auth.module";
             Proyecto,
             Tarea
         ]),
-        forwardRef(() => AuthModule)
+        forwardRef(() => AuthModule),
+        AuditoriaModule 
     ],
 
     controllers: [

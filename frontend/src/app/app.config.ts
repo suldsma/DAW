@@ -1,10 +1,11 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
+// src/app/app.config.ts
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { AuthStore } from './auth/auth-store';
+import { authInterceptor } from './auth/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,23 +16,9 @@ export const appConfig: ApplicationConfig = {
         preset: Aura 
       } 
     }),
+    
     provideHttpClient(
-      withInterceptors([
-        (req, next) => {
-          
-          const authStore = inject(AuthStore);
-          const token = authStore.obtenerToken();
-          
-          if (token) {
-            req = req.clone({
-              setHeaders: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-          }
-          return next(req);
-        }
-      ])
+      withInterceptors([authInterceptor])
     )
   ]
 };

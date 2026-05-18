@@ -1,4 +1,4 @@
-// BACKEND/SRC/MODULES/GESTION/CONTROLLERS/CLIENTES.CONTROLLER.TS
+// backend/src/modules/gestion/controllers/clientes.controller.ts
 
 import {
     Body,
@@ -30,6 +30,7 @@ import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
 import { EstadosClientesEnum } from "../enums/estados-clientes.enum";
 import { ClientesService } from "../services/clientes.service";
 import { JwtAuthGuard } from "../../auth/guards/auth.guard";
+import { GetUser } from "../../auth/decorators/get-user.decorator"; // ✅ NUEVO: Importamos el decorador para obtener el usuario del token
 
 @ApiTags('Gestión - Clientes')
 @ApiBearerAuth('JWT-auth')
@@ -45,9 +46,11 @@ export class ClientesController {
     @ApiOperation({ summary: 'Crear un nuevo cliente' })
     @ApiCreatedResponse({ description: 'Cliente creado con éxito.' })
     async crearCliente(
-        @Body() dto: CreateClienteDto
+        @Body() dto: CreateClienteDto,
+        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
     ): Promise<{ id: number }> {
-        return await this.clientesService.crearCliente(dto);
+        // ✅ Pasamos el usuario como segundo argumento
+        return await this.clientesService.crearCliente(dto, usuario);
     }
 
     @Put(':id')
@@ -56,9 +59,11 @@ export class ClientesController {
     @ApiNoContentResponse({ description: 'Datos actualizados correctamente.' })
     async actualizarCliente(
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateClienteDto
+        @Body() dto: UpdateClienteDto,
+        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
     ): Promise<void> {
-        await this.clientesService.actualizarCliente(id, dto);
+        // ✅ Pasamos el usuario para registrar la auditoría de la modificación
+        await this.clientesService.actualizarCliente(id, dto, usuario);
     }
 
     @Delete(':id')
@@ -69,9 +74,11 @@ export class ClientesController {
     })
     @ApiNoContentResponse({ description: 'Cliente eliminado correctamente.' })
     async eliminarCliente(
-        @Param('id', ParseIntPipe) id: number
+        @Param('id', ParseIntPipe) id: number,
+        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
     ): Promise<void> {
-        await this.clientesService.eliminarCliente(id);
+        // ✅ Pasamos el usuario para registrar la auditoría de la baja
+        await this.clientesService.eliminarCliente(id, usuario);
     }
 
     @Get()
@@ -83,7 +90,6 @@ export class ClientesController {
         @Query('estado') estado?: string,
         @Query('nombre') nombre?: string
     ): Promise<ListClienteDTO[]> {
-        
         return await this.clientesService.obtenerClientes(estado as EstadosClientesEnum, nombre);
     }
 
@@ -94,7 +100,6 @@ export class ClientesController {
     async obtenerClientePorId(
         @Param('id', ParseIntPipe) id: number
     ): Promise<ListClienteDTO> {
-        
         return await this.clientesService.obtenerCliente(id);
     }
 }

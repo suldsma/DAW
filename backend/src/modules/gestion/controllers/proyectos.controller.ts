@@ -1,3 +1,5 @@
+// backend/src/modules/gestion/controllers/proyectos.controller.ts
+
 import {
     Body,
     Controller,
@@ -31,6 +33,7 @@ import { ProyectoDTO } from "../dtos/output/proyecto.dto";
 import { ProyectosService } from "../services/proyectos.service";
 import { JwtAuthGuard } from "../../auth/guards/auth.guard"; 
 import { EstadosProyectosEnum } from "../enums/estados-proyectos.enum";
+import { GetUser } from "../../auth/decorators/get-user.decorator";
 
 @ApiTags('Gestión - Proyectos')
 @ApiBearerAuth('JWT-auth')
@@ -45,8 +48,12 @@ export class ProyectosController {
     @Post()
     @ApiOperation({ summary: 'Crear un nuevo proyecto' })
     @ApiCreatedResponse({ description: 'Proyecto creado exitosamente' })
-    async crearProyecto(@Body() dto: CreateProyectoDto): Promise<{ id: number }> {
-        return await this.proyectosService.crearProyecto(dto);
+    async crearProyecto(
+        @Body() dto: CreateProyectoDto,
+        @GetUser() usuario: any 
+    ): Promise<{ id: number }> {
+    
+        return await this.proyectosService.crearProyecto(dto, usuario);
     }
 
     @Get('exportar/csv')
@@ -96,15 +103,20 @@ export class ProyectosController {
     @ApiOperation({ summary: 'Actualizar un proyecto existente' })
     async actualizarProyecto(
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateProyectoDto
+        @Body() dto: UpdateProyectoDto,
+        @GetUser() usuario: any 
     ): Promise<void> {
-        await this.proyectosService.actualizarProyecto(id, dto);
+        await this.proyectosService.actualizarProyecto(id, dto, usuario);
     }
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Dar de baja un proyecto (Baja Lógica)' })
-    async eliminarProyecto(@Param('id', ParseIntPipe) id: number): Promise<void> {
-        await this.proyectosService.eliminarProyecto(id);
+    async eliminarProyecto(
+        @Param('id', ParseIntPipe) id: number,
+        @GetUser() usuario: any 
+    ): Promise<void> {
+        
+        await this.proyectosService.eliminarProyecto(id, usuario);
     }
 }
