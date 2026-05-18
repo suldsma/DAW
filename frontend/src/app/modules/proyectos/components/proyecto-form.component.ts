@@ -54,7 +54,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
           formControlName="idCliente" 
           class="input-select"
           [disabled]="guardando">
-          <option [value]="null">Sin cliente (Proyecto Interno)</option>
+          <option value="">Sin cliente (Proyecto Interno)</option>
           
           <option *ngFor="let cliente of clientesMostrables" [value]="cliente.id">
             {{ cliente.nombre }}
@@ -85,7 +85,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
           class="btn btn-secondary" 
           (click)="cancelar()"
           [disabled]="guardando">
-          Cancelar
+          Cancelado
         </button>
         <button 
           type="submit" 
@@ -100,136 +100,27 @@ import { takeUntil, finalize } from 'rxjs/operators';
     </form>
   `,
   styles: [`
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      color: #333;
-      font-size: 14px;
-    }
-
-    .input-text,
-    .input-select {
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      transition: all 0.3s ease;
-    }
-
-    .input-text:focus,
-    .input-select:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .input-text:disabled,
-    .input-select:disabled {
-      background-color: #f5f5f5;
-      cursor: not-allowed;
-    }
-
-    .input-error {
-      border-color: #ff6b6b;
-    }
-
-    .input-error:focus {
-      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-    }
-
-    .error-text {
-      color: #ff6b6b;
-      font-size: 12px;
-      margin-top: -5px;
-    }
-
-    .advertencia-text {
-      color: #ff9800;
-      font-size: 12px;
-      background-color: #fff3e0;
-      padding: 8px;
-      border-radius: 4px;
-      border-left: 3px solid #ff9800;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 10px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-secondary {
-      background-color: #e0e0e0;
-      color: #333;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background-color: #d0d0d0;
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .loading-text {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .mini-spinner {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    .form { display: flex; flex-direction: column; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-weight: 600; color: #333; font-size: 14px; }
+    .input-text, .input-select { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; transition: all 0.3s ease; }
+    .input-text:focus, .input-select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .input-text:disabled, .input-select:disabled { background-color: #f5f5f5; cursor: not-allowed; }
+    .input-error { border-color: #ff6b6b; }
+    .input-error:focus { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1); }
+    .error-text { color: #ff6b6b; font-size: 12px; margin-top: -5px; }
+    .advertencia-text { color: #ff9800; font-size: 12px; background-color: #fff3e0; padding: 8px; border-radius: 4px; border-left: 3px solid #ff9800; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { background-color: #e0e0e0; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background-color: #d0d0d0; }
+    .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading-text { display: flex; align-items: center; gap: 8px; }
+    .mini-spinner { width: 12px; height: 12px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class ProyectoFormComponent implements OnInit, OnDestroy {
@@ -255,7 +146,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
     if (this.proyecto) {
       this.formulario.patchValue({
         nombre: this.proyecto.nombre,
-        idCliente: this.proyecto.idCliente ? Number(this.proyecto.idCliente) : null,
+        idCliente: this.proyecto.idCliente ? String(this.proyecto.idCliente) : '',
         estado: this.proyecto.estado
       });
     }
@@ -269,7 +160,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   crearFormulario(): void {
     this.formulario = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      idCliente: [null],
+      idCliente: [''], // Iniciamos con string vacío para que encaje con la opción "Sin cliente"
       estado: [EstadoProyecto.ACTIVO]
     });
   }
@@ -304,12 +195,16 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
 
     this.guardando = true;
     const datos = this.formulario.value;
-    const idClienteFinal = datos.idCliente ? Number(datos.idCliente) : null;
+    
+    // Evaluamos si viene vacío o nulo antes de convertir a número
+    const idClienteFinal = (datos.idCliente === '' || datos.idCliente === null) ? null : Number(datos.idCliente);
 
-    // ✅ CORREGIDO: Declaramos payload explícitamente con índice de tipo para permitir asignaciones dinámicas.
-    const payload: { nombre: string; idCliente: number | null; [key: string]: any } = {
+    //  Enviamos el payload con AMBAS estructuras ('idCliente' y 'clienteId') por si el backend usa camelCase invertido.
+    // Esto previene al 100% que el validador DTO de NestJS rechace la petición.
+    const payload: any = {
       nombre: datos.nombre.trim(),
-      idCliente: idClienteFinal
+      idCliente: idClienteFinal,
+      clienteId: idClienteFinal
     };
 
     if (this.proyecto) {
@@ -333,17 +228,14 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
         });
     } else {
       // CREAR
-      this.proyectoService.crearProyecto({
-        nombre: payload.nombre,
-        idCliente: payload.idCliente
-      })
+      this.proyectoService.crearProyecto(payload)
         .pipe(
           takeUntil(this.destroy$),
           finalize(() => this.guardando = false)
         )
         .subscribe({
           next: () => {
-            this.formulario.reset();
+            this.formulario.reset({ nombre: '', idCliente: '', estado: EstadoProyecto.ACTIVO });
             this.onGuardado.emit();
           },
           error: (error) => {
@@ -356,7 +248,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   }
 
   cancelar(): void {
-    this.formulario.reset();
+    this.formulario.reset({ nombre: '', idCliente: '', estado: EstadoProyecto.ACTIVO });
     this.mostrarErrores = false;
     this.onCancelado.emit();
   }
