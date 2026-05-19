@@ -54,9 +54,10 @@ import { takeUntil, finalize } from 'rxjs/operators';
           formControlName="idCliente" 
           class="input-select"
           [disabled]="guardando">
-          <option value="">Sin cliente (Proyecto Interno)</option>
           
-          <option *ngFor="let cliente of clientesMostrables" [value]="cliente.id">
+          <option [ngValue]="null">Sin cliente (Proyecto Interno)</option>
+          
+          <option *ngFor="let cliente of clientesMostrables" [ngValue]="cliente.id">
             {{ cliente.nombre }}
           </option>
         </select>
@@ -85,7 +86,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
           class="btn btn-secondary" 
           (click)="cancelar()"
           [disabled]="guardando">
-          Cancelado
+          Cancelar
         </button>
         <button 
           type="submit" 
@@ -146,7 +147,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
     if (this.proyecto) {
       this.formulario.patchValue({
         nombre: this.proyecto.nombre,
-        idCliente: this.proyecto.idCliente ? String(this.proyecto.idCliente) : '',
+        idCliente: this.proyecto.idCliente ? Number(this.proyecto.idCliente) : null,
         estado: this.proyecto.estado
       });
     }
@@ -160,7 +161,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   crearFormulario(): void {
     this.formulario = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      idCliente: [''], // Iniciamos con string vacío para que encaje con la opción "Sin cliente"
+      idCliente: [null], 
       estado: [EstadoProyecto.ACTIVO]
     });
   }
@@ -196,11 +197,10 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
     this.guardando = true;
     const datos = this.formulario.value;
     
-    // Evaluamos si viene vacío o nulo antes de convertir a número
-    const idClienteFinal = (datos.idCliente === '' || datos.idCliente === null) ? null : Number(datos.idCliente);
+    const idClienteFinal = (datos.idCliente === null || datos.idCliente === undefined || datos.idCliente === '') 
+      ? null 
+      : Number(datos.idCliente);
 
-    //  Enviamos el payload con AMBAS estructuras ('idCliente' y 'clienteId') por si el backend usa camelCase invertido.
-    // Esto previene al 100% que el validador DTO de NestJS rechace la petición.
     const payload: any = {
       nombre: datos.nombre.trim(),
       idCliente: idClienteFinal,
@@ -235,7 +235,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
         )
         .subscribe({
           next: () => {
-            this.formulario.reset({ nombre: '', idCliente: '', estado: EstadoProyecto.ACTIVO });
+            this.formulario.reset({ nombre: '', idCliente: null, estado: EstadoProyecto.ACTIVO });
             this.onGuardado.emit();
           },
           error: (error) => {
@@ -248,7 +248,7 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   }
 
   cancelar(): void {
-    this.formulario.reset({ nombre: '', idCliente: '', estado: EstadoProyecto.ACTIVO });
+    this.formulario.reset({ nombre: '', idCliente: null, estado: EstadoProyecto.ACTIVO });
     this.mostrarErrores = false;
     this.onCancelado.emit();
   }

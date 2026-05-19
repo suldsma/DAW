@@ -6,7 +6,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { ClienteService } from '../../../shared/services/cliente.service';
 import { Cliente, EstadoCliente } from '../../../shared/models/index';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-cliente-form',
@@ -22,7 +22,8 @@ import { takeUntil } from 'rxjs/operators';
           formControlName="nombre"
           placeholder="Ingresa el nombre del cliente"
           class="input-text"
-          [class.input-error]="mostrarErrores && nombre?.invalid">
+          [class.input-error]="mostrarErrores && nombre?.invalid"
+          [disabled]="guardando">
         <span class="error-text" *ngIf="mostrarErrores && nombre?.invalid">
           {{ getNombreError() }}
         </span>
@@ -30,14 +31,14 @@ import { takeUntil } from 'rxjs/operators';
 
       <div class="form-group" *ngIf="cliente">
         <label for="estado">Estado</label>
-        <select formControlName="estado" class="input-select">
+        <select formControlName="estado" class="input-select" [disabled]="guardando">
           <option [value]="'ACTIVO'">Activo</option>
           <option [value]="'BAJA'">Baja</option>
         </select>
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelar()">
+        <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="guardando">
           Cancelar
         </button>
         <button type="submit" class="btn btn-primary" [disabled]="guardando || formulario.invalid">
@@ -83,6 +84,12 @@ import { takeUntil } from 'rxjs/operators';
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-text:disabled,
+    .input-select:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
     }
 
     .input-error {
@@ -136,8 +143,13 @@ import { takeUntil } from 'rxjs/operators';
       color: #333;
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       background-color: #d0d0d0;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .loading-text {
@@ -179,7 +191,6 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Si me pasan un cliente por Input, cargo sus datos para editarlos
     if (this.cliente) {
       this.formulario.patchValue({
         nombre: this.cliente.nombre,
@@ -211,37 +222,52 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     this.guardando = true;
     const datos = this.formulario.value;
 
-    // Determino si actualizo o creo según si tengo la entidad cargada en el Input
     if (this.cliente) {
-      this.clienteService.actualizarCliente(this.cliente.id, datos)
-        .pipe(takeUntil(this.destroy$))
+      const payloadActualizar = {
+        nombre: datos.nombre.trim(),
+        estado: datos.estado
+      };
+
+      this.clienteService.actualizarCliente(this.cliente.id, payloadActualizar)
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.guardando = false)
+        )
         .subscribe({
           next: () => {
-            this.guardando = false;
             this.onGuardado.emit();
           },
           error: (error) => {
             console.error('Error al actualizar:', error);
-            this.guardando = false;
+            alert('❌ Error al actualizar el cliente');
           }
         });
     } else {
-      this.clienteService.crearCliente({ nombre: datos.nombre })
-        .pipe(takeUntil(this.destroy$))
+      const payloadCrear = {
+        nombre: datos.nombre.trim()
+      };
+
+      this.clienteService.crearCliente(payloadCrear)
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.guardando = false)
+        )
         .subscribe({
           next: () => {
-            this.guardando = false;
+            this.formulario.reset({ nombre: '', estado: EstadoCliente.ACTIVO });
             this.onGuardado.emit();
           },
           error: (error) => {
             console.error('Error al crear:', error);
-            this.guardando = false;
+            alert('❌ Error al crear el cliente. Si el nombre ya existe, elegí uno diferente.');
           }
         });
     }
   }
 
   cancelar(): void {
+    this.formulario.reset({ nombre: '', estado: EstadoCliente.ACTIVO });
+    this.mostrarErrores = false;
     this.onCancelado.emit();
   }
 
@@ -249,7 +275,6 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     return this.formulario.get('nombre');
   }
 
-  // Helper para manejar textos dinámicos de validación en HTML
   getNombreError(): string {
     if (this.nombre?.errors?.['required']) return 'El nombre es requerido';
     if (this.nombre?.errors?.['minlength']) return 'El nombre debe tener al menos 2 caracteres';

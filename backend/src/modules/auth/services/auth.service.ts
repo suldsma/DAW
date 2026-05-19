@@ -29,7 +29,6 @@ export class AuthService {
 
         const usuario = await this.usuariosService.buscarUsuarioPorNombre(nombre.trim());
 
-        // Se usa el mismo mensaje genérico para no dar pistas en ataques de enumeración de usuarios
         if (!usuario || usuario.estado !== EstadosUsuariosEnum.ACTIVO) {
             this.logger.warn(`Intento de login fallido: Usuario inexistente o inactivo -> ${nombre}`);
             throw new UnauthorizedException('Credenciales inválidas');
@@ -56,7 +55,7 @@ export class AuthService {
     }
 
     async hashPassword(password: string): Promise<string> {
-        const saltRounds = 10; // Balance estándar entre seguridad y costo de procesamiento
+        const saltRounds = 10; 
         return await bcrypt.hash(password, saltRounds);
     }
 }

@@ -40,7 +40,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
             <div class="cards-list">
               <div class="card" *ngFor="let tarea of tareasKanban.PENDIENTE || []">
                 <div class="card-header">
-                  <h4>{{ tarea.descripcion }}</h4>
+                  <h4>{{ tarea?.descripcion }}</h4>
                   <div class="card-actions">
                     <button
                       class="btn-icon btn-check"
@@ -80,7 +80,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
             <div class="cards-list">
               <div class="card completed" *ngFor="let tarea of tareasKanban.FINALIZADA || []">
                 <div class="card-header">
-                  <h4>{{ tarea.descripcion }}</h4>
+                  <h4>{{ tarea?.descripcion }}</h4>
                   <button
                     class="btn-icon btn-delete"
                     (click)="eliminarTarea(tarea)"
@@ -417,7 +417,13 @@ import { takeUntil, finalize } from 'rxjs/operators';
   `]
 })
 export class KanbanBoardComponent implements OnInit, OnDestroy {
-  @Input() tareasKanban!: TareasKanban;
+  
+  // Mantenemos la estructura inicial vacía para evitar errores de asincronismo
+  @Input() tareasKanban: TareasKanban = {
+    PENDIENTE: [],
+    FINALIZADA: []
+  };
+  
   @Input() idProyecto!: number;
   @Output() onTareaGuardada = new EventEmitter<void>();
 

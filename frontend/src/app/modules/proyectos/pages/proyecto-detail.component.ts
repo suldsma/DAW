@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ProyectoService } from '../../../shared/services/proyecto.service';
 import { TareaService } from '../../../shared/services/tarea.service';
-import { ProyectoConTareas, TareasKanban } from '../../../shared/models/index';
+import { ProyectoConTareas, TareasKanban, EstadoProyecto } from '../../../shared/models/index';
 import { KanbanBoardComponent } from '../components/kanban-board.component';
 import { Subject, forkJoin } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
@@ -210,11 +210,6 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * ✅ CORREGIDO: Cargamos el proyecto y el tablero en paralelo usando forkJoin.
-   * La vista no cambia a "cargando = false" hasta que AMBOS servicios responden,
-   * fulminando el error de bucle infinito NG0103.
-   */
   cargarDatosIniciales(): void {
     this.cargando = true;
 
@@ -242,10 +237,6 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Recarga únicamente el tablero Kanban cuando una tarea es guardada/eliminada/finalizada.
-   * Al no tocar la variable 'cargando' general, la recarga es instantánea y transparente.
-   */
   cargarKanbanSolo(): void {
     this.tareaService.obtenerTableroKanban(this.idProyecto)
       .pipe(takeUntil(this.destroy$))
@@ -261,15 +252,15 @@ export class ProyectoDetailComponent implements OnInit, OnDestroy {
 
   private calcularValoresEstado(estado: string): void {
     switch (estado) {
-      case 'ACTIVO':
+      case EstadoProyecto.ACTIVO:
         this.estadoTexto = 'Activo';
         this.estadoColor = '#10b981';
         break;
-      case 'FINALIZADO':
+      case EstadoProyecto.FINALIZADO:
         this.estadoTexto = 'Finalizado';
         this.estadoColor = '#3b82f6';
         break;
-      case 'BAJA':
+      case EstadoProyecto.BAJA:
         this.estadoTexto = 'Baja';
         this.estadoColor = '#ef4444';
         break;

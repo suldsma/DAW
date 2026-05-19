@@ -9,7 +9,7 @@ import { AuthService } from "./services/auth.service";
 import { AuthController } from "./controllers/auth.controller";
 import { JwtAuthGuard } from "./guards/auth.guard";
 
-@Global() // Lo hacemos global para no tener que importar AuthModule en cada módulo que requiera proteger rutas
+@Global() 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Usuario]),
@@ -20,7 +20,7 @@ import { JwtAuthGuard } from "./guards/auth.guard";
             useFactory: (config: ConfigService) => {
                 const secret = config.get<string>('JWT_SECRET');
                 if (!secret) {
-                    // Falla en el arranque si falta la variable crítica de entorno
+                    
                     throw new Error('FATAL: JWT_SECRET no definido en .env');
                 }
                 return {

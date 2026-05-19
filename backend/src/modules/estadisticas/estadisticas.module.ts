@@ -20,8 +20,8 @@ import { AuthModule } from '../auth/auth.module';
             Tarea,
             Cliente
         ]),
-        GestionModule, // Provee los servicios base necesarios para contar registros
-        AuthModule // Permite el uso global del JwtAuthGuard en los controladores
+        GestionModule, 
+        AuthModule 
     ],
     controllers: [
         EstadisticasController

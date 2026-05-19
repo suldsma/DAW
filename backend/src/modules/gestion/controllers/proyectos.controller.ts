@@ -63,7 +63,7 @@ export class ProyectosController {
 
         const encabezado = 'ID;Nombre;Estado;Cliente\n';
         const filas = proyectos.map(p => {
-            // Limpieza manual de caracteres que rompen el formato plano del CSV
+
             const nombre = p.nombre.replace(/[;\n\r]/g, '');
             const cliente = (p.cliente?.nombre || 'Interno').replace(/[;\n\r]/g, '');
             return `${p.id};${nombre};${p.estado};${cliente}`;

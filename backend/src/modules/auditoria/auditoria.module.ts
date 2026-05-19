@@ -10,6 +10,6 @@ import { AuditoriaController } from './controllers/auditoria.controller';
   ],
   providers: [AuditoriaService],
   controllers: [AuditoriaController],
-  exports: [AuditoriaService] // Se exporta para que otros módulos puedan registrar sus propios eventos de auditoría
+  exports: [AuditoriaService] 
 })
 export class AuditoriaModule {}

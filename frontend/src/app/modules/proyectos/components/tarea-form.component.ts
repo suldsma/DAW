@@ -53,7 +53,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
         <button 
           type="submit" 
           class="btn btn-primary" 
-          [disabled]="guardando || formulario.invalid">
+          [disabled]="guardando || formulario.invalid || !idProyecto">
           <span *ngIf="!guardando">Crear Tarea</span>
           <span *ngIf="guardando" class="loading-text">
             <span class="mini-spinner"></span> Guardando...
@@ -63,129 +63,31 @@ import { takeUntil, finalize } from 'rxjs/operators';
     </form>
   `,
   styles: [`
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      color: #333;
-      font-size: 14px;
-    }
-
-    .input-textarea {
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      resize: vertical;
-      transition: all 0.3s ease;
-    }
-
-    .input-textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .input-textarea:disabled {
-      background-color: #f5f5f5;
-      cursor: not-allowed;
-    }
-
-    .input-error {
-      border-color: #ff6b6b;
-    }
-
-    .input-error:focus {
-      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-    }
-
-    .error-text {
-      color: #ff6b6b;
-      font-size: 12px;
-      margin-top: -5px;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 10px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-secondary {
-      background-color: #e0e0e0;
-      color: #333;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background-color: #d0d0d0;
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .loading-text {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .mini-spinner {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    .form { display: flex; flex-direction: column; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-weight: 600; color: #333; font-size: 14px; }
+    .input-textarea { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; transition: all 0.3s ease; }
+    .input-textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .input-textarea:disabled { background-color: #f5f5f5; cursor: not-allowed; }
+    .input-error { border-color: #ff6b6b; }
+    .input-error:focus { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1); }
+    .error-text { color: #ff6b6b; font-size: 12px; margin-top: -5px; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { background-color: #e0e0e0; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background-color: #d0d0d0; }
+    .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading-text { display: flex; align-items: center; gap: 8px; }
+    .mini-spinner { width: 12px; height: 12px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class TareaFormComponent implements OnInit, OnDestroy {
-  @Input() idProyecto!: number;
+  
+  @Input() idProyecto: number | string | null = null;
   @Output() onGuardado = new EventEmitter<void>();
   @Output() onCancelado = new EventEmitter<void>();
 
@@ -203,7 +105,7 @@ export class TareaFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // No hacer nada especial en init
+
   }
 
   ngOnDestroy(): void {
@@ -225,42 +127,43 @@ export class TareaFormComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.idProyecto) {
+      alert('❌ Error: No se ha seleccionado un proyecto válido para asignar la tarea.');
+      return;
+    }
+
     this.guardando = true;
     const datos = this.formulario.value;
+    
+    const proyectoIdNumerico = Number(this.idProyecto);
 
-    this.tareaService.crearTarea(this.idProyecto, {
-      descripcion: datos.descripcion
+    this.tareaService.crearTarea(proyectoIdNumerico, {
+      descripcion: datos.descripcion.trim()
     })
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
-          
           this.guardando = false;
         })
       )
       .subscribe({
         next: () => {
-          
           this.formulario.reset();
           this.mostrarErrores = false;
           this.onGuardado.emit();
         },
         error: (error) => {
-          // ❌ Error: mostrar mensaje
           console.error('Error al crear la tarea:', error);
-          
           const mensajeError = error.error?.message 
             || error.message 
             || 'Error al crear la tarea';
-          
           alert(`❌ Error: ${mensajeError}`);
-          
         }
       });
   }
 
   cancelar(): void {
-    this.formulario.reset();
+    this.formulario.reset({ descripcion: '' });
     this.mostrarErrores = false;
     this.onCancelado.emit();
   }

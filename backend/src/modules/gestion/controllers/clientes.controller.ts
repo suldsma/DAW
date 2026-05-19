@@ -30,7 +30,7 @@ import { ListClienteDTO } from "../dtos/output/list-cliente.dto";
 import { EstadosClientesEnum } from "../enums/estados-clientes.enum";
 import { ClientesService } from "../services/clientes.service";
 import { JwtAuthGuard } from "../../auth/guards/auth.guard";
-import { GetUser } from "../../auth/decorators/get-user.decorator"; // ✅ NUEVO: Importamos el decorador para obtener el usuario del token
+import { GetUser } from "../../auth/decorators/get-user.decorator"; 
 
 @ApiTags('Gestión - Clientes')
 @ApiBearerAuth('JWT-auth')
@@ -47,9 +47,9 @@ export class ClientesController {
     @ApiCreatedResponse({ description: 'Cliente creado con éxito.' })
     async crearCliente(
         @Body() dto: CreateClienteDto,
-        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
+        @GetUser() usuario: any 
     ): Promise<{ id: number }> {
-        // ✅ Pasamos el usuario como segundo argumento
+        
         return await this.clientesService.crearCliente(dto, usuario);
     }
 
@@ -60,9 +60,9 @@ export class ClientesController {
     async actualizarCliente(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateClienteDto,
-        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
+        @GetUser() usuario: any 
     ): Promise<void> {
-        // ✅ Pasamos el usuario para registrar la auditoría de la modificación
+        
         await this.clientesService.actualizarCliente(id, dto, usuario);
     }
 
@@ -75,9 +75,9 @@ export class ClientesController {
     @ApiNoContentResponse({ description: 'Cliente eliminado correctamente.' })
     async eliminarCliente(
         @Param('id', ParseIntPipe) id: number,
-        @GetUser() usuario: any // ✅ NUEVO: Captura el usuario logueado dinámicamente
+        @GetUser() usuario: any 
     ): Promise<void> {
-        // ✅ Pasamos el usuario para registrar la auditoría de la baja
+        
         await this.clientesService.eliminarCliente(id, usuario);
     }
 

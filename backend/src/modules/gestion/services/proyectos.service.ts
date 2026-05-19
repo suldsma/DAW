@@ -137,7 +137,7 @@ export class ProyectosService {
 
             if (cliente.estado !== EstadosClientesEnum.ACTIVO) {
                 throw new BadRequestException(
-                    `No se puede assignar el cliente "${cliente.nombre}" porque está en estado "${cliente.estado}". ` +
+                    `No se puede asignar el cliente "${cliente.nombre}" porque está en estado "${cliente.estado}". ` +
                     `Solo se pueden asignar clientes en estado ACTIVO.`
                 );
             }
@@ -315,11 +315,13 @@ export class ProyectosService {
         dto.nombre = proyecto.nombre;
         dto.estado = proyecto.estado;
 
+        
         if (proyecto.cliente) {
-            dto.cliente = new ListClienteDTO();
-            dto.cliente.id = proyecto.cliente.id;
-            dto.cliente.nombre = proyecto.cliente.nombre;
-            dto.cliente.estado = proyecto.cliente.estado;
+            dto.cliente = {
+                id: proyecto.cliente.id,
+                nombre: proyecto.cliente.nombre,
+                estado: proyecto.cliente.estado
+            } as any;
         } else {
             dto.cliente = null;
         }

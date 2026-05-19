@@ -114,13 +114,17 @@ export class ClientesService {
 
         const clienteGuardado = await this.repository.save(cliente);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.CLIENTE,
-            clienteGuardado.id,
-            TipoOperacionEnum.CREAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.CLIENTE,
+                clienteGuardado.id,
+                TipoOperacionEnum.CREAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+        } catch (error) {
+            console.error('⚠️ Error al registrar auditoría de creación:', error.message);
+        }
 
         return { id: clienteGuardado.id };
     }
@@ -147,8 +151,9 @@ export class ClientesService {
 
         if (dto.estado) {
             if (dto.estado === EstadosClientesEnum.BAJA && cliente.estado !== EstadosClientesEnum.BAJA) {
+                // Modificado para que coincida exactamente con la propiedad mappedBy de TypeORM
                 const totalProyectos = await this.proyectoRepository.count({
-                    where: { cliente: { id: id } }
+                    where: { idCliente: id } 
                 });
 
                 if (totalProyectos > 0) {
@@ -164,13 +169,17 @@ export class ClientesService {
 
         await this.repository.save(cliente);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.CLIENTE,
-            cliente.id,
-            TipoOperacionEnum.ACTUALIZAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.CLIENTE,
+                cliente.id,
+                TipoOperacionEnum.ACTUALIZAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+        } catch (error) {
+            console.error('⚠️ Error al registrar auditoría de actualización:', error.message);
+        }
     }
 
     async cambiarEstadoCliente(
@@ -185,8 +194,9 @@ export class ClientesService {
         }
 
         if (nuevoEstado === EstadosClientesEnum.BAJA && cliente.estado !== EstadosClientesEnum.BAJA) {
+            // Modificado para coincidir con la clave de relación de TypeORM
             const totalProyectos = await this.proyectoRepository.count({
-                where: { cliente: { id: id } }
+                where: { idCliente: id }
             });
 
             if (totalProyectos > 0) {
@@ -200,13 +210,17 @@ export class ClientesService {
         cliente.estado = nuevoEstado;
         await this.repository.save(cliente);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.CLIENTE,
-            cliente.id,
-            TipoOperacionEnum.ACTUALIZAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.CLIENTE,
+                cliente.id,
+                TipoOperacionEnum.ACTUALIZAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+        } catch (error) {
+            console.error('⚠️ Error al registrar auditoría de cambio de estado:', error.message);
+        }
     }
 
     async eliminarCliente(id: number, usuarioActual: any): Promise<void> {
@@ -220,8 +234,9 @@ export class ClientesService {
             throw new BadRequestException('El cliente ya se encuentra dado de baja');
         }
 
+        // Modificado para coincidir con la clave de relación de TypeORM
         const totalProyectos = await this.proyectoRepository.count({
-            where: { cliente: { id: id } }
+            where: { idCliente: id }
         });
 
         if (totalProyectos > 0) {
@@ -233,13 +248,17 @@ export class ClientesService {
         cliente.estado = EstadosClientesEnum.BAJA;
         await this.repository.save(cliente);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.CLIENTE,
-            cliente.id,
-            TipoOperacionEnum.ELIMINAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.CLIENTE,
+                cliente.id,
+                TipoOperacionEnum.ELIMINAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+        } catch (error) {
+            console.error('⚠️ Error al registrar auditoría de eliminación:', error.message);
+        }
     }
 
     async obtenerClientesActivos(): Promise<ListClienteDTO[]> {

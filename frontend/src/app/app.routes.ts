@@ -8,6 +8,7 @@ import { ClientesListComponent } from './modules/clientes/pages/clientes-list.co
 import { ProyectosListComponent } from './modules/proyectos/pages/proyectos-list.component';
 import { ProyectoDetailComponent } from './modules/proyectos/pages/proyecto-detail.component';
 import { EstadisticasComponent } from './modules/estadisticas/pages/estadisticas.component';
+import { KanbanBoardComponent } from './modules/proyectos/components/kanban-board.component';
 
 export const routes: Routes = [
   // ===== RUTA DE LOGIN =====
@@ -52,6 +53,12 @@ export const routes: Routes = [
       {
         path: 'estadisticas',
         component: EstadisticasComponent
+      },
+
+      //  ===== TAREAS =====
+      {
+        path: 'tareas',
+        component: KanbanBoardComponent
       }
     ]
   },

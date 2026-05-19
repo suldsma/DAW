@@ -19,7 +19,7 @@ export class UsuariosService {
                     val: nombre.trim() 
                 })
             },
-            // Forzamos la clave porque en la entidad tiene 'select: false' por seguridad
+            
             select: ['id', 'nombre', 'estado', 'clave'] 
         });
     }

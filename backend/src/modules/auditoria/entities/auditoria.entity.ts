@@ -14,7 +14,6 @@ export enum TipoOperacionEnum {
 }
 
 @Entity({ name: "auditorias" })
-// Índices compuestos para optimizar las búsquedas más frecuentes del historial
 @Index(['tipoEntidad', 'idEntidad'])
 @Index(['idUsuario', 'fechaOperacion'])
 export class Auditoria {
@@ -22,8 +21,10 @@ export class Auditoria {
     @PrimaryGeneratedColumn()
     id!: number;
 
+    // CORREGIDO: Ahora explícitamente guardará en la columna "tipo_entidad"
     @Column({ 
-        type: 'varchar', // Se usa varchar en lugar de enum nativo de Postgres para facilitar migraciones y cambios futuros
+        name: 'tipo_entidad',
+        type: 'varchar', 
         length: 50
     })
     tipoEntidad!: TipoEntidadEnum;
@@ -31,7 +32,9 @@ export class Auditoria {
     @Column({ name: 'id_entidad' })
     idEntidad!: number;
 
+    // CORREGIDO: Ahora explícitamente guardará en la columna "tipo_operacion"
     @Column({ 
+        name: 'tipo_operacion',
         type: 'varchar', 
         length: 20 
     })
@@ -47,7 +50,7 @@ export class Auditoria {
     nombreUsuario!: string;
 
     @Column({ 
-        type: 'jsonb', // jsonb en Postgres permite indexar y consultar subpropiedades eficientemente
+        type: 'jsonb', 
         nullable: true,
         comment: 'Estado previo y posterior del registro'
     })

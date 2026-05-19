@@ -37,6 +37,13 @@ export class ProyectosListComponent implements OnInit, OnDestroy {
   filtroNombre = '';
   filtroEstado = '';
 
+  estadoOptions = [
+    { label: 'Todos', value: '' },
+    { label: 'Activo', value: EstadoProyecto.ACTIVO },
+    { label: 'Finalizado', value: EstadoProyecto.FINALIZADO },
+    { label: 'Baja', value: EstadoProyecto.BAJA }
+  ];
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -215,14 +222,5 @@ export class ProyectosListComponent implements OnInit, OnDestroy {
           alert('Error al cambiar el estado del proyecto');
         }
       });
-  }
-
-  get estadoOptions() {
-    return [
-      { label: 'Todos', value: '' },
-      { label: 'Activo', value: EstadoProyecto.ACTIVO },
-      { label: 'Finalizado', value: EstadoProyecto.FINALIZADO },
-      { label: 'Baja', value: EstadoProyecto.BAJA }
-    ];
   }
 }

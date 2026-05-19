@@ -63,7 +63,7 @@
   gap: 20px;
 }
 
-/* Mensaje de error general de autenticación (falla de login) */
+/* Mensaje de error general de autenticación  */
 .error-message {
   background-color: #ffebee;
   border: 1px solid #ff6b6b;
@@ -92,7 +92,7 @@
   }
 }
 
-/* Grupos de campos del formulario (Inputs y etiquetas) */
+/* Grupos de campos del formulario  */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -168,7 +168,7 @@
   opacity: 0.5;
 }
 
-/* Mensajes de error individuales por campo (Validaciones inline) */
+/* Mensajes de error individuales por campo  */
 .field-error {
   color: #ff6b6b;
   font-size: 12px;
@@ -332,7 +332,7 @@
 
 /* ===== DISEÑO RESPONSIVO (Media Queries) ===== */
 
-/* Tablets y pantallas medianas (oculta la sección derecha informativa) */
+/* Tablets y pantallas medianas  */
 @media (max-width: 1024px) {
   .login-wrapper {
     grid-template-columns: 1fr;
@@ -348,7 +348,7 @@
   }
 }
 
-/* Celulares grandes y medianos (ajustes de padding y tamaño de fuentes) */
+/* Celulares grandes y medianos  */
 @media (max-width: 768px) {
   .login-container {
     padding: 10px;
@@ -372,7 +372,7 @@
   }
 }
 
-/* Celulares chicos (reducción máxima de espacios y paddings) */
+/* Celulares chicos  */
 @media (max-width: 480px) {
   .login-box {
     padding: 20px;
