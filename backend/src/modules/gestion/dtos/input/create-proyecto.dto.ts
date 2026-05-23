@@ -1,5 +1,3 @@
-// BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/CREATE-PROYECTO.DTO.TS
-
 import { ApiProperty } from "@nestjs/swagger";
 import {
     IsNotEmpty,
@@ -7,7 +5,8 @@ import {
     IsOptional,
     IsString,
     MaxLength,
-    MinLength
+    MinLength,
+    IsDateString 
 } from "class-validator";
 import { Transform, Type } from "class-transformer";
 
@@ -33,7 +32,17 @@ export class CreateProyectoDto {
         nullable: true
     })
     @IsOptional()
-    @Type(() => Number) // Convierte a number si el dato llega como string desde multipart/form-data o query
+    @Type(() => Number)
     @IsNumber({}, { message: 'El ID del cliente debe ser un valor numérico válido' })
     idCliente?: number;
+
+    @ApiProperty({
+        example: '2026-06-30',
+        description: 'Fecha objetiva de finalización (YYYY-MM-DD)',
+        required: false,
+        nullable: true
+    })
+    @IsOptional()
+    @IsDateString({}, { message: 'La fecha de finalización debe tener un formato de fecha válido (YYYY-MM-DD)' })
+    fechaFinalizacionObjetivo?: string;
 }

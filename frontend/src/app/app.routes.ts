@@ -1,5 +1,3 @@
-// src/app/app.routes.ts
-
 import { Routes } from '@angular/router';
 import { AuthGuard, NoAuthGuard } from './auth/auth.guard';
 import { LoginComponent } from './auth/login/login.component';
@@ -9,6 +7,7 @@ import { ProyectosListComponent } from './modules/proyectos/pages/proyectos-list
 import { ProyectoDetailComponent } from './modules/proyectos/pages/proyecto-detail.component';
 import { EstadisticasComponent } from './modules/estadisticas/pages/estadisticas.component';
 import { KanbanBoardComponent } from './modules/proyectos/components/kanban-board.component';
+import { AuditoriaComponent } from './modules/auditoria/auditoria.component';
 
 export const routes: Routes = [
   // ===== RUTA DE LOGIN =====
@@ -24,46 +23,40 @@ export const routes: Routes = [
     component: LayoutComponent,
     canActivate: [AuthGuard], 
     children: [
-      // Ruta por defecto
       {
         path: '',
         redirectTo: '/proyectos',
         pathMatch: 'full'
       },
-
-      // ===== CLIENTES =====
       {
         path: 'clientes',
         component: ClientesListComponent
       },
-
-      // ===== PROYECTOS =====
       {
         path: 'proyectos',
         component: ProyectosListComponent
       },
-
-      // ===== DETALLE DE PROYECTO (CON ID) =====
       {
         path: 'proyectos/:id',
         component: ProyectoDetailComponent
       },
-
-      // ===== ESTADÍSTICAS =====
       {
         path: 'estadisticas',
         component: EstadisticasComponent
       },
-
-      //  ===== TAREAS =====
       {
         path: 'tareas',
         component: KanbanBoardComponent
+      },
+      
+      {
+        path: 'auditoria',
+        component: AuditoriaComponent
       }
     ]
   },
 
-  // ===== RUTA CATCH-ALL  =====
+  // ===== RUTA CATCH-ALL =====
   {
     path: '**',
     redirectTo: '/proyectos'

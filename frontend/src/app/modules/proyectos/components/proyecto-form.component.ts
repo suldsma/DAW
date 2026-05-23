@@ -1,5 +1,3 @@
-// src/app/modules/proyectos/components/proyecto-form.component.ts
-
 import { 
   Component, 
   Input, 
@@ -23,8 +21,9 @@ import {
   EstadoProyecto, 
   EstadoCliente 
 } from '../../../shared/models/index';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs'; 
 import { takeUntil, finalize } from 'rxjs/operators';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-proyecto-form',
@@ -34,68 +33,34 @@ import { takeUntil, finalize } from 'rxjs/operators';
     <form [formGroup]="formulario" (ngSubmit)="guardar()" class="form">
       <div class="form-group">
         <label for="nombre">Nombre del Proyecto *</label>
-        <input
-          id="nombre"
-          type="text"
-          formControlName="nombre"
-          placeholder="Ingresa el nombre del proyecto"
-          class="input-text"
-          [class.input-error]="mostrarErrores && nombre?.invalid"
-          [disabled]="guardando">
-        <span class="error-text" *ngIf="mostrarErrores && nombre?.invalid">
-          {{ getNombreError() }}
-        </span>
+        <input id="nombre" type="text" formControlName="nombre" class="input-text" [class.input-error]="mostrarErrores && nombre?.invalid" [disabled]="guardando">
+        <span class="error-text" *ngIf="mostrarErrores && nombre?.invalid">{{ getNombreError() }}</span>
       </div>
-
       <div class="form-group">
         <label for="idCliente">Cliente (Opcional)</label>
-        <select 
-          id="idCliente"
-          formControlName="idCliente" 
-          class="input-select"
-          [disabled]="guardando">
-          
+        <select id="idCliente" formControlName="idCliente" class="input-select" [disabled]="guardando">
           <option [ngValue]="null">Sin cliente (Proyecto Interno)</option>
-          
-          <option *ngFor="let cliente of clientesMostrables" [ngValue]="cliente.id">
-            {{ cliente.nombre }}
-          </option>
+          <option *ngFor="let cliente of clientesMostrables" [ngValue]="cliente.id">{{ cliente.nombre }}</option>
         </select>
-        
-        <span class="advertencia-text" *ngIf="clientesActivos.length === 0 && !proyecto">
-          ⚠️ No hay clientes ACTIVOS disponibles. Solo se pueden asignar clientes en estado ACTIVO.
-        </span>
       </div>
-
+      <div class="form-group">
+        <label for="fechaFinalizacion">Fecha de Finalización Objetivo</label>
+        <input id="fechaFinalizacion" type="date" formControlName="fechaFinalizacionObjetivo" class="input-text" [disabled]="guardando">
+        <span class="help-text" *ngIf="formulario.get('fechaFinalizacionObjetivo')?.value">{{ diasRestantes }} días restantes</span>
+      </div>
       <div class="form-group" *ngIf="proyecto">
         <label for="estado">Estado</label>
-        <select 
-          id="estado"
-          formControlName="estado" 
-          class="input-select"
-          [disabled]="guardando">
+        <select id="estado" formControlName="estado" class="input-select" [disabled]="guardando">
           <option value="ACTIVO">Activo</option>
           <option value="FINALIZADO">Finalizado</option>
           <option value="BAJA">Baja</option>
         </select>
       </div>
-
       <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          (click)="cancelar()"
-          [disabled]="guardando">
-          Cancelar
-        </button>
-        <button 
-          type="submit" 
-          class="btn btn-primary" 
-          [disabled]="guardando || formulario.invalid">
+        <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="guardando || formulario.invalid">
           <span *ngIf="!guardando">{{ proyecto ? 'Actualizar' : 'Crear' }}</span>
-          <span *ngIf="guardando" class="loading-text">
-            <span class="mini-spinner"></span> Guardando...
-          </span>
+          <span *ngIf="guardando" class="loading-text"><span class="mini-spinner"></span> Guardando...</span>
         </button>
       </div>
     </form>
@@ -103,24 +68,12 @@ import { takeUntil, finalize } from 'rxjs/operators';
   styles: [`
     .form { display: flex; flex-direction: column; gap: 20px; }
     .form-group { display: flex; flex-direction: column; gap: 8px; }
-    .form-group label { font-weight: 600; color: #333; font-size: 14px; }
-    .input-text, .input-select { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; transition: all 0.3s ease; }
-    .input-text:focus, .input-select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-    .input-text:disabled, .input-select:disabled { background-color: #f5f5f5; cursor: not-allowed; }
-    .input-error { border-color: #ff6b6b; }
-    .input-error:focus { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1); }
-    .error-text { color: #ff6b6b; font-size: 12px; margin-top: -5px; }
-    .advertencia-text { color: #ff9800; font-size: 12px; background-color: #fff3e0; padding: 8px; border-radius: 4px; border-left: 3px solid #ff9800; }
-    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
-    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-secondary { background-color: #e0e0e0; color: #333; }
-    .btn-secondary:hover:not(:disabled) { background-color: #d0d0d0; }
-    .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .loading-text { display: flex; align-items: center; gap: 8px; }
-    .mini-spinner { width: 12px; height: 12px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .input-text, .input-select { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-secondary { background: #e0e0e0; }
+    .mini-spinner { width: 12px; height: 12px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
@@ -133,13 +86,9 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
   formulario!: FormGroup;
   mostrarErrores = false;
   guardando = false;
-
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private fb: FormBuilder,
-    private proyectoService: ProyectoService
-  ) {
+  constructor(private fb: FormBuilder, private proyectoService: ProyectoService) {
     this.crearFormulario();
   }
 
@@ -148,7 +97,8 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
       this.formulario.patchValue({
         nombre: this.proyecto.nombre,
         idCliente: this.proyecto.idCliente ? Number(this.proyecto.idCliente) : null,
-        estado: this.proyecto.estado
+        estado: this.proyecto.estado,
+        fechaFinalizacionObjetivo: this.proyecto.fechaFinalizacionObjetivo
       });
     }
   }
@@ -162,108 +112,58 @@ export class ProyectoFormComponent implements OnInit, OnDestroy {
     this.formulario = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
       idCliente: [null], 
-      estado: [EstadoProyecto.ACTIVO]
+      estado: [EstadoProyecto.ACTIVO],
+      fechaFinalizacionObjetivo: [null]
     });
   }
 
-  get clientesActivos(): Cliente[] {
-    return this.clientes.filter(c => c.estado === EstadoCliente.ACTIVO);
-  }
-
-  get clientesMostrables(): Cliente[] {
-    const clientesActivos = this.clientesActivos;
-    
-    if (this.proyecto && this.proyecto.idCliente) {
-      const clienteActual = this.clientes.find(
-        c => Number(c.id) === Number(this.proyecto?.idCliente)
-      );
-      
-      if (clienteActual && !clientesActivos.find(c => c.id === clienteActual.id)) {
-        return [...clientesActivos, clienteActual];
-      }
-    }
-    
-    return clientesActivos;
+  get diasRestantes(): number {
+    const fechaValor = this.formulario.get('fechaFinalizacionObjetivo')?.value;
+    if (!fechaValor) return 0;
+    const fecha = new Date(fechaValor);
+    const hoy = new Date();
+    fecha.setHours(0, 0, 0, 0); hoy.setHours(0, 0, 0, 0);
+    return Math.ceil((fecha.getTime() - hoy.getTime()) / (1000 * 3600 * 24));
   }
 
   guardar(): void {
     this.mostrarErrores = false;
-
-    if (this.formulario.invalid) {
-      this.mostrarErrores = true;
-      return;
-    }
+    if (this.formulario.invalid) { this.mostrarErrores = true; return; }
 
     this.guardando = true;
     const datos = this.formulario.value;
-    
-    const idClienteFinal = (datos.idCliente === null || datos.idCliente === undefined || datos.idCliente === '') 
-      ? null 
-      : Number(datos.idCliente);
-
-    const payload: any = {
+    const payload = {
       nombre: datos.nombre.trim(),
-      idCliente: idClienteFinal,
-      clienteId: idClienteFinal
+      idCliente: datos.idCliente ? Number(datos.idCliente) : null,
+      estado: datos.estado,
+      fechaFinalizacionObjetivo: datos.fechaFinalizacionObjetivo || null
     };
 
-    if (this.proyecto) {
-      // ACTUALIZAR
-      payload['estado'] = datos.estado;
+    const operacion: Observable<any> = this.proyecto 
+      ? this.proyectoService.actualizarProyecto(this.proyecto.id, payload)
+      : this.proyectoService.crearProyecto(payload);
 
-      this.proyectoService.actualizarProyecto(this.proyecto.id, payload)
-        .pipe(
-          takeUntil(this.destroy$),
-          finalize(() => this.guardando = false)
-        )
-        .subscribe({
-          next: () => {
-            this.onGuardado.emit();
-          },
-          error: (error) => {
-            console.error('Error al actualizar:', error);
-            const mensaje = error.error?.message || 'Error al actualizar el proyecto';
-            alert(`❌ ${mensaje}`);
-          }
-        });
-    } else {
-      // CREAR
-      this.proyectoService.crearProyecto(payload)
-        .pipe(
-          takeUntil(this.destroy$),
-          finalize(() => this.guardando = false)
-        )
-        .subscribe({
-          next: () => {
-            this.formulario.reset({ nombre: '', idCliente: null, estado: EstadoProyecto.ACTIVO });
-            this.onGuardado.emit();
-          },
-          error: (error) => {
-            console.error('Error al crear:', error);
-            const mensaje = error.error?.message || 'Error al crear el proyecto';
-            alert(`❌ ${mensaje}`);
-          }
-        });
-    }
+    operacion.pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.guardando = false)
+    ).subscribe({
+      next: () => this.onGuardado.emit(),
+      error: (err: HttpErrorResponse) => alert(err.error?.message || 'Error al guardar')
+    });
   }
 
   cancelar(): void {
-    this.formulario.reset({ nombre: '', idCliente: null, estado: EstadoProyecto.ACTIVO });
-    this.mostrarErrores = false;
+    this.formulario.reset({ nombre: '', idCliente: null, estado: EstadoProyecto.ACTIVO, fechaFinalizacionObjetivo: null });
     this.onCancelado.emit();
   }
 
-  get nombre() {
-    return this.formulario.get('nombre');
-  }
-
+  get nombre() { return this.formulario.get('nombre'); }
   getNombreError(): string {
-    if (this.nombre?.errors?.['required']) {
-      return 'El nombre es requerido';
-    }
-    if (this.nombre?.errors?.['minlength']) {
-      return 'El nombre debe tener al menos 3 caracteres';
-    }
+    if (this.nombre?.errors?.['required']) return 'El nombre es requerido';
+    if (this.nombre?.errors?.['minlength']) return 'Mínimo 3 caracteres';
     return '';
+  }
+  get clientesMostrables(): Cliente[] {
+    return this.clientes.filter(c => c.estado === EstadoCliente.ACTIVO);
   }
 }

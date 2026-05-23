@@ -1,9 +1,3 @@
-// src/app/shared/models/index.ts
-
-// ============================================================================
-// ENUMS
-// ============================================================================
-
 export enum EstadoUsuario {
   ACTIVO = 'ACTIVO',
   BAJA = 'BAJA'
@@ -26,10 +20,6 @@ export enum EstadoTarea {
   BAJA = 'BAJA'
 }
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
-
 export interface Usuario {
   id: number;
   nombre: string;
@@ -48,6 +38,7 @@ export interface Proyecto {
   estado: EstadoProyecto;
   cliente?: Cliente | null;
   idCliente?: number | null;
+  fechaFinalizacionObjetivo?: string | Date;
 }
 
 export interface Tarea {
@@ -64,11 +55,6 @@ export interface TareasKanban {
   PENDIENTE: Tarea[];
   FINALIZADA: Tarea[];
 }
-
-// ============================================================================
-// DTOs - REQUEST
-// ============================================================================
-
 export interface LoginRequest {
   nombre: string;
   clave: string;
@@ -86,12 +72,14 @@ export interface UpdateClienteRequest {
 export interface CreateProyectoRequest {
   nombre: string;
   idCliente?: number | null;
+  fechaFinalizacionObjetivo?: string | Date;
 }
 
 export interface UpdateProyectoRequest {
   nombre?: string;
   estado?: EstadoProyecto;
   idCliente?: number | null;
+  fechaFinalizacionObjetivo?: string | Date;
 }
 
 export interface CreateTareaRequest {
@@ -102,10 +90,6 @@ export interface UpdateTareaRequest {
   descripcion?: string;
   estado?: EstadoTarea;
 }
-
-// ============================================================================
-// DTOs - RESPONSE
-// ============================================================================
 
 export interface LoginResponse {
   accessToken: string;
@@ -151,10 +135,6 @@ export interface EstadisticasPorProyecto {
   totalTareas: number;
   porcentajeCompletado: number;
 }
-
-// ============================================================================
-// ERROR HANDLING
-// ============================================================================
 
 export interface ErrorResponse {
   statusCode: number;

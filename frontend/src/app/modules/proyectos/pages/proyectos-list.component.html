@@ -61,6 +61,7 @@
           <th>Nombre</th>
           <th>Cliente</th>
           <th>Estado</th>
+          <th>Entrega</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -72,6 +73,11 @@
           <td class="col-estado">
             <span class="badge" [style.background-color]="proyecto.estadoColor">
               {{ proyecto.estadoTexto }}
+            </span>
+          </td>
+          <td class="col-fecha">
+            <span class="badge" [style.background-color]="proyecto.colorFecha">
+              {{ proyecto.diasRestantes }} días
             </span>
           </td>
           <td class="col-acciones">

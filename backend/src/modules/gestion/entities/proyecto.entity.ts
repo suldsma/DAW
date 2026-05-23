@@ -1,5 +1,3 @@
-// BACKEND/SRC/MODULES/GESTION/ENTITIES/PROYECTO.ENTITY.TS
-
 import {
     Column,
     Entity,
@@ -67,15 +65,26 @@ export class Proyecto {
     )
     tareas!: Tarea[];
 
+
+    @Column({
+        name: 'fechaFinalizacionObjetivo',
+        type: 'date',
+        nullable: true,
+        comment: 'Fecha objetiva de finalización del proyecto'
+    })
+    fechaFinalizacionObjetivo?: Date | null;
+
+    @UpdateDateColumn({
+        name: 'fecha_actualizacion',
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP'
+    })
+    fechaActualizacion!: Date;
+
+
     @CreateDateColumn({
         name: 'fecha_creacion',
         type: 'timestamp'
     })
     fechaCreacion!: Date;
-
-    @UpdateDateColumn({
-        name: 'fecha_actualizacion',
-        type: 'timestamp'
-    })
-    fechaActualizacion!: Date;
 }

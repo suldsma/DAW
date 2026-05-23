@@ -1,19 +1,23 @@
-// src/app/modules/clientes/components/cliente-form.component.ts
-
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ClienteService } from '../../../shared/services/cliente.service';
 import { Cliente, EstadoCliente } from '../../../shared/models/index';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-cliente-form',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
-    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="form">
+    <form [formGroup]="formulario" (ngSubmit)="onGuardar()" class="form">
+      
+      <div *ngIf="mensajeError" class="mensaje-error-box">
+        <p>⚠️ {{ mensajeError }}</p>
+      </div>
+
       <div class="form-group">
         <label for="nombre">Nombre del Cliente *</label>
         <input
@@ -23,7 +27,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
           placeholder="Ingresa el nombre del cliente"
           class="input-text"
           [class.input-error]="mostrarErrores && nombre?.invalid"
-          [disabled]="guardando">
+          [disabled]="isGuardando">
         <span class="error-text" *ngIf="mostrarErrores && nombre?.invalid">
           {{ getNombreError() }}
         </span>
@@ -31,19 +35,26 @@ import { takeUntil, finalize } from 'rxjs/operators';
 
       <div class="form-group" *ngIf="cliente">
         <label for="estado">Estado</label>
-        <select formControlName="estado" class="input-select" [disabled]="guardando">
-          <option [value]="'ACTIVO'">Activo</option>
-          <option [value]="'BAJA'">Baja</option>
+        <select formControlName="estado" class="input-select" [disabled]="isGuardando">
+          <option value="ACTIVO">Activo</option>
+          <option value="BAJA">Baja</option>
         </select>
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="guardando">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="onCancelar()" 
+          [disabled]="isGuardando">
           Cancelar
         </button>
-        <button type="submit" class="btn btn-primary" [disabled]="guardando || formulario.invalid">
-          <span *ngIf="!guardando">{{ cliente ? 'Actualizar' : 'Crear' }}</span>
-          <span *ngIf="guardando" class="loading-text">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="isGuardando || formulario.invalid">
+          <span *ngIf="!isGuardando">{{ cliente ? 'Actualizar' : 'Crear' }}</span>
+          <span *ngIf="isGuardando" class="loading-text">
             <span class="mini-spinner"></span> Guardando...
           </span>
         </button>
@@ -51,124 +62,108 @@ import { takeUntil, finalize } from 'rxjs/operators';
     </form>
   `,
   styles: [`
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+    .form { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 20px; 
     }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .form-group { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
     }
-
-    .form-group label {
-      font-weight: 600;
-      color: #333;
-      font-size: 14px;
+    .form-group label { 
+      font-weight: 600; 
+      color: #333; 
+      font-size: 14px; 
     }
-
-    .input-text,
-    .input-select {
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+    .input-text, .input-select { 
+      padding: 10px 12px; 
+      border: 1px solid #ddd; 
+      border-radius: 6px; 
       font-size: 14px;
       font-family: inherit;
-      transition: all 0.3s ease;
     }
-
-    .input-text:focus,
-    .input-select:focus {
+    .input-text:focus, .input-select:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-
-    .input-text:disabled,
-    .input-select:disabled {
-      background-color: #f5f5f5;
-      cursor: not-allowed;
+    .input-error { 
+      border-color: #ff6b6b; 
+      background-color: #fff5f5;
     }
-
-    .input-error {
-      border-color: #ff6b6b;
+    .error-text { 
+      color: #ff6b6b; 
+      font-size: 12px; 
+      margin-top: -5px; 
     }
-
-    .input-error:focus {
-      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-    }
-
-    .error-text {
-      color: #ff6b6b;
-      font-size: 12px;
-      margin-top: -5px;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 10px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-secondary {
-      background-color: #e0e0e0;
-      color: #333;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background-color: #d0d0d0;
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .loading-text {
+    .mensaje-error-box { 
+      background-color: #fee2e2; 
+      border: 1px solid #f87171; 
+      color: #b91c1c; 
+      padding: 12px; 
+      border-radius: 6px; 
+      font-size: 13px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-
-    .mini-spinner {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .mensaje-error-box p {
+      margin: 0;
     }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .form-actions { 
+      display: flex; 
+      gap: 10px; 
+      justify-content: flex-end;
+      padding-top: 10px;
+    }
+    .btn { 
+      padding: 10px 20px; 
+      border: none; 
+      border-radius: 6px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-primary { 
+      background: #667eea; 
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #5568d3;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary { 
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #d0d0d0;
+    }
+    .btn:disabled { 
+      opacity: 0.6; 
+      cursor: not-allowed; 
+    }
+    .loading-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mini-spinner { 
+      width: 14px; 
+      height: 14px; 
+      border: 2px solid #ffffff; 
+      border-top-color: transparent; 
+      border-radius: 50%; 
+      animation: spin 0.8s linear infinite; 
+      display: inline-block; 
+    }
+    @keyframes spin { 
+      to { 
+        transform: rotate(360deg); 
+      } 
     }
   `]
 })
@@ -179,7 +174,8 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
 
   formulario!: FormGroup;
   mostrarErrores = false;
-  guardando = false;
+  isGuardando = false;
+  mensajeError: string | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -192,10 +188,7 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.cliente) {
-      this.formulario.patchValue({
-        nombre: this.cliente.nombre,
-        estado: this.cliente.estado
-      });
+      this.cargarDatosCliente();
     }
   }
 
@@ -204,71 +197,97 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  crearFormulario(): void {
+  private crearFormulario(): void {
     this.formulario = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(2)]],
       estado: [EstadoCliente.ACTIVO]
     });
   }
 
-  guardar(): void {
-    this.mostrarErrores = false;
+  private cargarDatosCliente(): void {
+    if (this.cliente) {
+      this.formulario.patchValue({
+        nombre: this.cliente.nombre,
+        estado: this.cliente.estado || EstadoCliente.ACTIVO
+      });
+    }
+  }
+
+  onGuardar(): void {
+    this.mensajeError = null;
 
     if (this.formulario.invalid) {
       this.mostrarErrores = true;
       return;
     }
 
-    this.guardando = true;
-    const datos = this.formulario.value;
+    this.mostrarErrores = false;
+    this.isGuardando = true;
 
-    if (this.cliente) {
-      const payloadActualizar = {
-        nombre: datos.nombre.trim(),
-        estado: datos.estado
-      };
+    const formData = this.formulario.value;
+    const datosEnvio = {
+      nombre: formData.nombre.trim(),
+      estado: formData.estado
+    };
 
-      this.clienteService.actualizarCliente(this.cliente.id, payloadActualizar)
-        .pipe(
-          takeUntil(this.destroy$),
-          finalize(() => this.guardando = false)
-        )
-        .subscribe({
-          next: () => {
-            this.onGuardado.emit();
-          },
-          error: (error) => {
-            console.error('Error al actualizar:', error);
-            alert('❌ Error al actualizar el cliente');
-          }
-        });
-    } else {
-      const payloadCrear = {
-        nombre: datos.nombre.trim()
-      };
+    const operacion$: Observable<Cliente> = this.cliente
+      ? this.clienteService.actualizarCliente(this.cliente.id, datosEnvio)
+      : this.clienteService.crearCliente(datosEnvio);
 
-      this.clienteService.crearCliente(payloadCrear)
-        .pipe(
-          takeUntil(this.destroy$),
-          finalize(() => this.guardando = false)
-        )
-        .subscribe({
-          next: () => {
-            this.formulario.reset({ nombre: '', estado: EstadoCliente.ACTIVO });
-            this.onGuardado.emit();
-          },
-          error: (error) => {
-            console.error('Error al crear:', error);
-            alert('❌ Error al crear el cliente. Si el nombre ya existe, elegí uno diferente.');
-          }
-        });
-    }
+    operacion$
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isGuardando = false;
+        })
+      )
+      .subscribe({
+        next: (respuesta: Cliente) => {
+          console.log('✅ Operación exitosa:', respuesta);
+          this.onGuardado.emit();
+          this.limpiarFormulario();
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('❌ Error en la solicitud:', error);
+          this.manejarError(error);
+        }
+      });
   }
 
-  cancelar(): void {
-    this.formulario.reset({ nombre: '', estado: EstadoCliente.ACTIVO });
-    this.mostrarErrores = false;
+  onCancelar(): void {
+    this.limpiarFormulario();
     this.onCancelado.emit();
+  }
+
+  private limpiarFormulario(): void {
+    this.formulario.reset({
+      nombre: '',
+      estado: EstadoCliente.ACTIVO
+    });
+    this.mostrarErrores = false;
+    this.mensajeError = null;
+  }
+
+  private manejarError(error: HttpErrorResponse): void {
+    let mensajeError = 'Error al procesar la solicitud';
+
+    if (error.error) {
+      if (typeof error.error === 'string') {
+        mensajeError = error.error;
+      } else if (error.error.message) {
+        mensajeError = error.error.message;
+      } else if (error.error.error) {
+        mensajeError = error.error.error;
+      }
+    } else if (error.message) {
+      mensajeError = error.message;
+    } else if (error.status === 0) {
+      mensajeError = 'Error de conexión. Verifica tu conexión a internet.';
+    } else {
+      mensajeError = `Error ${error.status}: ${error.statusText}`;
+    }
+
+    this.mensajeError = mensajeError;
   }
 
   get nombre() {
@@ -276,8 +295,21 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
   }
 
   getNombreError(): string {
-    if (this.nombre?.errors?.['required']) return 'El nombre es requerido';
-    if (this.nombre?.errors?.['minlength']) return 'El nombre debe tener al menos 2 caracteres';
+    const control = this.nombre;
+    
+    if (!control) {
+      return '';
+    }
+
+    if (control.errors?.['required']) {
+      return 'El nombre es requerido';
+    }
+
+    if (control.errors?.['minlength']) {
+      const minLength = control.errors['minlength'].requiredLength;
+      return `Mínimo ${minLength} caracteres`;
+    }
+
     return '';
   }
 }
