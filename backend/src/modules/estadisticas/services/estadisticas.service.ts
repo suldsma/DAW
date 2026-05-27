@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 
@@ -12,9 +12,12 @@ import { Cliente } from '../../gestion/entities/cliente.entity';
 
 import { EstadosProyectosEnum } from '../../gestion/enums/estados-proyectos.enum';
 import { EstadosTareasEnum } from '../../gestion/enums/estados-tareas.enum';
+import { EstadosClientesEnum } from '../../gestion/enums/estados-clientes.enum';
 
 @Injectable()
 export class EstadisticasService {
+
+    private readonly logger = new Logger(EstadisticasService.name);
 
     constructor(
         private readonly clientesService: ClientesService,
@@ -31,99 +34,199 @@ export class EstadisticasService {
         private readonly clienteRepository: Repository<Cliente>,
     ) { }
 
+    /**
+     * Obtiene resumen general del sistema con métricas principales
+     * @returns Objeto con resumen, porcentajes y fecha del reporte
+     */
     async obtenerResumenGeneral() {
-        // Ejecución en paralelo para optimizar la carga inicial del dashboard
-        const [
-            totalClientes,
-            clientesActivos,
-            proyectosActivos,
-            proyectosFinalizados,
-            tareasPendientes,
-            tareasFinalizadas
-        ] = await Promise.all([
-            this.clientesService.contarClientesTotales(),
-            this.clientesService.contarClientesActivos(),
-            this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.ACTIVO),
-            this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.FINALIZADO),
-            this.tareasService.contarTareasPorEstado(EstadosTareasEnum.PENDIENTE),
-            this.tareasService.contarTareasPorEstado(EstadosTareasEnum.FINALIZADA)
-        ]);
-
-        const totalProyectos = proyectosActivos + proyectosFinalizados;
-        const totalTareas = tareasPendientes + tareasFinalizadas;
-
-        return {
-            resumen: {
+        try {
+            const [
                 totalClientes,
                 clientesActivos,
                 proyectosActivos,
                 proyectosFinalizados,
                 tareasPendientes,
                 tareasFinalizadas
-            },
-            porcentajes: {
-                proyectosFinalizados: totalProyectos > 0 ? Math.round((proyectosFinalizados / totalProyectos) * 100) : 0,
-                tareasCompletadas: totalTareas > 0 ? Math.round((tareasFinalizadas / totalTareas) * 100) : 0
-            },
-            fechaReporte: new Date().toISOString()
-        };
+            ] = await Promise.all([
+                this.clientesService.contarClientesTotales(),
+                this.clientesService.contarClientesActivos(),
+                this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.ACTIVO),
+                this.proyectosService.contarProyectosPorEstado(EstadosProyectosEnum.FINALIZADO),
+                this.tareasService.contarTareasPorEstado(EstadosTareasEnum.PENDIENTE),
+                this.tareasService.contarTareasPorEstado(EstadosTareasEnum.FINALIZADA)
+            ]);
+
+            const totalProyectos = proyectosActivos + proyectosFinalizados;
+            const totalTareas = tareasPendientes + tareasFinalizadas;
+
+            const resumen = {
+                resumen: {
+                    totalClientes,
+                    clientesActivos,
+                    proyectosActivos,
+                    proyectosFinalizados,
+                    tareasPendientes,
+                    tareasFinalizadas
+                },
+                porcentajes: {
+                    proyectosFinalizados: totalProyectos > 0 
+                        ? Math.round((proyectosFinalizados / totalProyectos) * 100) 
+                        : 0,
+                    tareasCompletadas: totalTareas > 0 
+                        ? Math.round((tareasFinalizadas / totalTareas) * 100) 
+                        : 0
+                },
+                fechaReporte: new Date().toISOString()
+            };
+
+            this.logger.log('Resumen general calculado correctamente');
+            return resumen;
+
+        } catch (error) {
+            this.logger.error(
+                'Error al obtener resumen general',
+                error instanceof Error ? error.stack : String(error),
+                'EstadisticasService.obtenerResumenGeneral'
+            );
+            throw error;
+        }
     }
 
+    /**
+     * Obtiene estadísticas de clientes con sus proyectos y tareas
+     * @returns Array de estadísticas por cliente
+     */
     async obtenerEstadisticasPorCliente() {
-        const clientes = await this.clienteRepository.find({
-            where: { estado: Not('BAJA' as any) },
-            relations: ['proyectos', 'proyectos.tareas'],
-            order: { nombre: 'ASC' }
-        });
+        try {
+            const clientes = await this.clienteRepository.find({
+                where: { estado: EstadosClientesEnum.ACTIVO },
+                relations: ['proyectos', 'proyectos.tareas'],
+                order: { nombre: 'ASC' }
+            });
 
-        return clientes.map(cliente => {
-            const proyectos = cliente.proyectos || [];
-            const tareas = proyectos.flatMap(p => p.tareas || []);
+            const estadisticas = clientes.map(cliente => {
+                const proyectos = cliente.proyectos || [];
+                const tareas = proyectos.flatMap(p => p.tareas || []);
 
-            return {
-                clienteId: cliente.id,
-                clienteNombre: cliente.nombre,
-                amountProyectos: proyectos.length,
-                proyectosActivos: proyectos.filter(p => p.estado === EstadosProyectosEnum.ACTIVO).length,
-                cantidadTareas: tareas.length,
-                tareasFinalizadas: tareas.filter(t => t.estado === EstadosTareasEnum.FINALIZADA).length
-            };
-        });
+                return {
+                    clienteId: cliente.id,
+                    clienteNombre: cliente.nombre,
+                    cantidadProyectos: proyectos.length,
+                    proyectosActivos: proyectos.filter(
+                        p => p.estado === EstadosProyectosEnum.ACTIVO
+                    ).length,
+                    cantidadTareas: tareas.length,
+                    tareasFinalizadas: tareas.filter(
+                        t => t.estado === EstadosTareasEnum.FINALIZADA
+                    ).length
+                };
+            });
+
+            this.logger.log(`Estadísticas por cliente calculadas: ${estadisticas.length} clientes`);
+            return estadisticas;
+
+        } catch (error) {
+            this.logger.error(
+                'Error al obtener estadísticas por cliente',
+                error instanceof Error ? error.stack : String(error),
+                'EstadisticasService.obtenerEstadisticasPorCliente'
+            );
+            throw error;
+        }
     }
 
+    /**
+     * Obtiene estadísticas de proyectos con información de tareas
+     * @returns Array de estadísticas por proyecto
+     */
     async obtenerEstadisticasPorProyecto() {
-        const proyectos = await this.proyectoRepository.find({
-            where: { estado: Not('BAJA' as any) },
-            relations: ['cliente', 'tareas'],
-            order: { nombre: 'ASC' }
-        });
+        try {
+            const proyectos = await this.proyectoRepository.find({
+                where: { estado: EstadosProyectosEnum.ACTIVO },
+                relations: ['cliente', 'tareas'],
+                order: { nombre: 'ASC' }
+            });
 
-        return proyectos.map(proyecto => {
-            const tareas = proyecto.tareas || [];
-            const finalizadas = tareas.filter(t => t.estado === EstadosTareasEnum.FINALIZADA).length;
-            
-            return {
-                proyectoId: proyecto.id,
-                proyectoNombre: proyecto.nombre,
-                estado: proyecto.estado,
-                cliente: proyecto.cliente?.nombre || 'Sin Cliente', 
-                totalTareas: tareas.length,
-                porcentajeCompletado: tareas.length > 0 ? Math.round((finalizadas / tareas.length) * 100) : 0
-            };
-        });
+            const estadisticas = proyectos.map(proyecto => {
+                const tareas = proyecto.tareas || [];
+                const finalizadas = tareas.filter(
+                    t => t.estado === EstadosTareasEnum.FINALIZADA
+                ).length;
+
+                return {
+                    proyectoId: proyecto.id,
+                    proyectoNombre: proyecto.nombre,
+                    estado: proyecto.estado,
+                    cliente: proyecto.cliente?.nombre || 'Interno',
+                    totalTareas: tareas.length,
+                    porcentajeCompletado: tareas.length > 0 
+                        ? Math.round((finalizadas / tareas.length) * 100) 
+                        : 0
+                };
+            });
+
+            this.logger.log(`Estadísticas por proyecto calculadas: ${estadisticas.length} proyectos`);
+            return estadisticas;
+
+        } catch (error) {
+            this.logger.error(
+                'Error al obtener estadísticas por proyecto',
+                error instanceof Error ? error.stack : String(error),
+                'EstadisticasService.obtenerEstadisticasPorProyecto'
+            );
+            throw error;
+        }
     }
 
+    /**
+     * Obtiene proyectos próximos a completarse (80%+ de avance)
+     * @returns Array de proyectos ordenados por porcentaje completado
+     */
     async obtenerProyectosProximosACompletarse() {
-        const stats = await this.obtenerEstadisticasPorProyecto();
-        return stats
-            .filter(p => p.estado === EstadosProyectosEnum.ACTIVO && p.porcentajeCompletado >= 80)
-            .sort((a, b) => b.porcentajeCompletado - a.porcentajeCompletado);
+        try {
+            const stats = await this.obtenerEstadisticasPorProyecto();
+            const proximos = stats
+                .filter(p => p.estado === EstadosProyectosEnum.ACTIVO && p.porcentajeCompletado >= 80)
+                .sort((a, b) => b.porcentajeCompletado - a.porcentajeCompletado);
+
+            this.logger.log(`Proyectos próximos a completarse: ${proximos.length}`);
+            return proximos;
+
+        } catch (error) {
+            this.logger.error(
+                'Error al obtener proyectos próximos a completarse',
+                error instanceof Error ? error.stack : String(error),
+                'EstadisticasService.obtenerProyectosProximosACompletarse'
+            );
+            throw error;
+        }
     }
 
+    /**
+     * Obtiene proyectos atrasados (menos de 20% de avance)
+     * @returns Array de proyectos ordenados por porcentaje completado (menor a mayor)
+     */
     async obtenerProyectosAtrasados() {
-        const stats = await this.obtenerEstadisticasPorProyecto();
-        return stats
-            .filter(p => p.estado === EstadosProyectosEnum.ACTIVO && p.totalTareas > 0 && p.porcentajeCompletado < 20)
-            .sort((a, b) => a.porcentajeCompletado - b.porcentajeCompletado);
+        try {
+            const stats = await this.obtenerEstadisticasPorProyecto();
+            const atrasados = stats
+                .filter(p => 
+                    p.estado === EstadosProyectosEnum.ACTIVO && 
+                    p.totalTareas > 0 && 
+                    p.porcentajeCompletado < 20
+                )
+                .sort((a, b) => a.porcentajeCompletado - b.porcentajeCompletado);
+
+            this.logger.log(`Proyectos atrasados identificados: ${atrasados.length}`);
+            return atrasados;
+
+        } catch (error) {
+            this.logger.error(
+                'Error al obtener proyectos atrasados',
+                error instanceof Error ? error.stack : String(error),
+                'EstadisticasService.obtenerProyectosAtrasados'
+            );
+            throw error;
+        }
     }
 }

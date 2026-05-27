@@ -4,7 +4,8 @@ import {
     BadRequestException,
     Inject,
     forwardRef,
-    ConflictException
+    ConflictException,
+    Logger
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, ILike, FindOptionsWhere, Not } from "typeorm";
@@ -22,6 +23,8 @@ import { TipoEntidadEnum, TipoOperacionEnum } from "../../auditoria/entities/aud
 
 @Injectable()
 export class TareasService {
+
+    private readonly logger = new Logger(TareasService.name);
 
     constructor(
         @InjectRepository(Tarea)
@@ -95,13 +98,22 @@ export class TareasService {
 
         const guardada = await this.repository.save(tarea);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.TAREA,
-            guardada.id,
-            TipoOperacionEnum.CREAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.TAREA,
+                guardada.id,
+                TipoOperacionEnum.CREAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+            this.logger.log(`Tarea creada: ID ${guardada.id} en proyecto ${idProyecto}`);
+        } catch (error) {
+            this.logger.error(
+                `Fallo al registrar auditoría de creación de la tarea ID: ${guardada.id}`,
+                error instanceof Error ? error.stack : String(error),
+                'TareasService.crearTarea'
+            );
+        }
 
         return { id: guardada.id };
     }
@@ -121,13 +133,22 @@ export class TareasService {
 
         await this.repository.save(tareaEntity);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.TAREA,
-            tareaEntity.id,
-            TipoOperacionEnum.ACTUALIZAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.TAREA,
+                tareaEntity.id,
+                TipoOperacionEnum.ACTUALIZAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+            this.logger.log(`Tarea actualizada: ID ${tareaEntity.id}`);
+        } catch (error) {
+            this.logger.error(
+                `Fallo al registrar auditoría de actualización de la tarea ID: ${tareaEntity.id}`,
+                error instanceof Error ? error.stack : String(error),
+                'TareasService.actualizarTarea'
+            );
+        }
     }
 
     async eliminarTarea(id: number, usuarioActual: any): Promise<void> {
@@ -141,13 +162,22 @@ export class TareasService {
         tarea.estado = EstadosTareasEnum.BAJA;
         await this.repository.save(tarea);
 
-        await this.auditoriaService.registrarCambio(
-            TipoEntidadEnum.TAREA,
-            tarea.id,
-            TipoOperacionEnum.ELIMINAR,
-            usuarioActual.sub,
-            usuarioActual.nombre
-        );
+        try {
+            await this.auditoriaService.registrarCambio(
+                TipoEntidadEnum.TAREA,
+                tarea.id,
+                TipoOperacionEnum.ELIMINAR,
+                usuarioActual.sub,
+                usuarioActual.nombre
+            );
+            this.logger.log(`Tarea eliminada (baja lógica): ID ${tarea.id}`);
+        } catch (error) {
+            this.logger.error(
+                `Fallo al registrar auditoría de eliminación de la tarea ID: ${tarea.id}`,
+                error instanceof Error ? error.stack : String(error),
+                'TareasService.eliminarTarea'
+            );
+        }
     }
 
     async obtenerTareasKanban(idProyecto: number): Promise<Record<string, ListTareaDTO[]>> {

@@ -24,19 +24,20 @@ export class Proyecto {
     @Column({
         type: 'varchar',
         length: 150,
-        unique: true
+        unique: true,
+        nullable: false
     })
     nombre!: string;
 
     @Column({
         type: 'enum',
         enum: EstadosProyectosEnum,
-        default: EstadosProyectosEnum.ACTIVO
+        default: EstadosProyectosEnum.ACTIVO,
+        nullable: false
     })
     estado!: EstadosProyectosEnum;
 
     @Column({
-        name: "id_cliente",
         type: 'int',
         nullable: true
     })
@@ -52,7 +53,7 @@ export class Proyecto {
             eager: false
         }
     )
-    @JoinColumn({ name: "id_cliente" })
+    @JoinColumn({ name: "idCliente" })
     cliente?: Cliente | null;
 
     @OneToMany(
@@ -65,9 +66,7 @@ export class Proyecto {
     )
     tareas!: Tarea[];
 
-
     @Column({
-        name: 'fechaFinalizacionObjetivo',
         type: 'date',
         nullable: true,
         comment: 'Fecha objetiva de finalización del proyecto'
@@ -75,15 +74,12 @@ export class Proyecto {
     fechaFinalizacionObjetivo?: Date | null;
 
     @UpdateDateColumn({
-        name: 'fecha_actualizacion',
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP'
     })
     fechaActualizacion!: Date;
 
-
     @CreateDateColumn({
-        name: 'fecha_creacion',
         type: 'timestamp'
     })
     fechaCreacion!: Date;

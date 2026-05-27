@@ -19,7 +19,6 @@ export class ClienteService {
 
   constructor(private apiService: ApiService) {}
 
-  // Obtener lista de clientes
   listarClientes(
     estado?: string,
     nombre?: string
@@ -54,8 +53,19 @@ export class ClienteService {
     return this.apiService.put<void>(`${this.endpoint}/${id}`, data);
   }
 
-  // Eliminar cliente
-  eliminarCliente(id: number): Observable<void> {
+  eliminarCliente(id: number, usuario?: any): Observable<void> {
     return this.apiService.delete<void>(`${this.endpoint}/${id}`);
+  }
+
+  contarClientesTotales(): Observable<number> {
+    return this.apiService.get<{ total: number }>(`${this.endpoint}/count`).pipe(
+      map(res => res.total)
+    );
+  }
+
+  contarClientesActivos(): Observable<number> {
+    return this.apiService.get<{ total: number }>(`${this.endpoint}/count`, { estado: 'ACTIVO' }).pipe(
+      map(res => res.total)
+    );
   }
 }

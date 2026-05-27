@@ -1,13 +1,14 @@
-// BACKEND/SRC/MODULES/GESTION/DTOS/INPUT/CREATE-CLIENTE.DTO.TS
-
 import { ApiProperty } from "@nestjs/swagger";
 import {
     IsNotEmpty,
     IsString,
     MaxLength,
-    MinLength
+    MinLength,
+    IsOptional,
+    IsEnum
 } from "class-validator";
 import { Transform } from "class-transformer";
+import { EstadosClientesEnum } from "../../enums/estados-clientes.enum";
 
 export class CreateClienteDto {
 
@@ -23,4 +24,13 @@ export class CreateClienteDto {
     @MinLength(2, { message: 'El nombre es demasiado corto (mínimo 2 caracteres)' })
     @MaxLength(120, { message: 'El nombre excede el límite permitido de 120 caracteres' })
     nombre!: string;
+
+    @ApiProperty({
+        enum: EstadosClientesEnum,
+        description: 'Estado inicial del cliente',
+        required: false
+    })
+    @IsOptional()
+    @IsEnum(EstadosClientesEnum, { message: 'El estado proporcionado no es válido' })
+    estado?: EstadosClientesEnum;
 }

@@ -1,3 +1,4 @@
+//frontend/src/app/modules/clientes/componentscliente-form.component.ts
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -62,109 +63,25 @@ import { HttpErrorResponse } from '@angular/common/http';
     </form>
   `,
   styles: [`
-    .form { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 20px; 
-    }
-    .form-group { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 8px; 
-    }
-    .form-group label { 
-      font-weight: 600; 
-      color: #333; 
-      font-size: 14px; 
-    }
-    .input-text, .input-select { 
-      padding: 10px 12px; 
-      border: 1px solid #ddd; 
-      border-radius: 6px; 
-      font-size: 14px;
-      font-family: inherit;
-    }
-    .input-text:focus, .input-select:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    .input-error { 
-      border-color: #ff6b6b; 
-      background-color: #fff5f5;
-    }
-    .error-text { 
-      color: #ff6b6b; 
-      font-size: 12px; 
-      margin-top: -5px; 
-    }
-    .mensaje-error-box { 
-      background-color: #fee2e2; 
-      border: 1px solid #f87171; 
-      color: #b91c1c; 
-      padding: 12px; 
-      border-radius: 6px; 
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .mensaje-error-box p {
-      margin: 0;
-    }
-    .form-actions { 
-      display: flex; 
-      gap: 10px; 
-      justify-content: flex-end;
-      padding-top: 10px;
-    }
-    .btn { 
-      padding: 10px 20px; 
-      border: none; 
-      border-radius: 6px; 
-      font-size: 14px; 
-      font-weight: 600; 
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .btn-primary { 
-      background: #667eea; 
-      color: white;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: #5568d3;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    .btn-secondary { 
-      background: #e0e0e0;
-      color: #333;
-    }
-    .btn-secondary:hover:not(:disabled) {
-      background: #d0d0d0;
-    }
-    .btn:disabled { 
-      opacity: 0.6; 
-      cursor: not-allowed; 
-    }
-    .loading-text {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .mini-spinner { 
-      width: 14px; 
-      height: 14px; 
-      border: 2px solid #ffffff; 
-      border-top-color: transparent; 
-      border-radius: 50%; 
-      animation: spin 0.8s linear infinite; 
-      display: inline-block; 
-    }
-    @keyframes spin { 
-      to { 
-        transform: rotate(360deg); 
-      } 
-    }
+    .form { display: flex; flex-direction: column; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-weight: 600; color: #333; font-size: 14px; }
+    .input-text, .input-select { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
+    .input-text:focus, .input-select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .input-error { border-color: #ff6b6b; background-color: #fff5f5; }
+    .error-text { color: #ff6b6b; font-size: 12px; margin-top: -5px; }
+    .mensaje-error-box { background-color: #fee2e2; border: 1px solid #f87171; color: #b91c1c; padding: 12px; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .mensaje-error-box p { margin: 0; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 10px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background: #d0d0d0; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading-text { display: flex; align-items: center; gap: 6px; }
+    .mini-spinner { width: 14px; height: 14px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class ClienteFormComponent implements OnInit, OnDestroy {
@@ -230,7 +147,8 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
       estado: formData.estado
     };
 
-    const operacion$: Observable<Cliente> = this.cliente
+    // CORRECCIÓN: Se cambió el tipo a Observable<any> para evitar el error TS2322
+    const operacion$: Observable<any> = this.cliente
       ? this.clienteService.actualizarCliente(this.cliente.id, datosEnvio)
       : this.clienteService.crearCliente(datosEnvio);
 
@@ -296,20 +214,9 @@ export class ClienteFormComponent implements OnInit, OnDestroy {
 
   getNombreError(): string {
     const control = this.nombre;
-    
-    if (!control) {
-      return '';
-    }
-
-    if (control.errors?.['required']) {
-      return 'El nombre es requerido';
-    }
-
-    if (control.errors?.['minlength']) {
-      const minLength = control.errors['minlength'].requiredLength;
-      return `Mínimo ${minLength} caracteres`;
-    }
-
+    if (!control) return '';
+    if (control.errors?.['required']) return 'El nombre es requerido';
+    if (control.errors?.['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
     return '';
   }
 }

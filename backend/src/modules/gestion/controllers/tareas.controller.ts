@@ -54,7 +54,7 @@ export class TareasController {
         return await this.tareasService.crearTarea(dto, idProyecto, usuario);
     }
 
-    @Get('kanban/tablero')
+    @Get('kanban')
     @ApiOperation({ summary: 'Obtener tareas agrupadas por estado (Vista Kanban)' })
     async obtenerTareasKanban(
         @Param('idProyecto', ParseIntPipe) idProyecto: number

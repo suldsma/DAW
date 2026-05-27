@@ -243,12 +243,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999 !important; /* CORRECCIÓN: Asegura que esté al frente */
   padding: 20px;
 }
 
 .modal {
-  background: white;
+  background: white !important; /* CORRECCIÓN: Fuerza fondo blanco */
+  color: #333 !important;      /* CORRECCIÓN: Fuerza texto oscuro */
   border-radius: 12px;
   max-width: 500px;
   width: 100%;
@@ -305,94 +306,28 @@
 }
 
 /* ===== REGLAS RESPONSIVAS (Media Queries) ===== */
-
-/* Tablets y pantallas medianas (Oculta columnas secundarias y estira controles) */
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .page-header h1 {
-    font-size: 24px;
-  }
-
-  .btn {
-    width: 100%;
-  }
-
-  .filtros-section {
-    flex-direction: column;
-  }
-
-  .filtro-group {
-    min-width: unset;
-  }
-
-  .tabla th,
-  .tabla td {
-    padding: 12px;
-    font-size: 12px;
-  }
-
-  .col-id {
-    display: none;
-  }
-
-  .col-nombre {
-    width: auto;
-  }
-
-  .col-acciones {
-    width: auto;
-  }
-
-  .modal {
-    max-width: 90%;
-  }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .page-header h1 { font-size: 24px; }
+  .btn { width: 100%; }
+  .filtros-section { flex-direction: column; }
+  .filtro-group { min-width: unset; }
+  .tabla th, .tabla td { padding: 12px; font-size: 12px; }
+  .col-id { display: none; }
+  .col-nombre { width: auto; }
+  .col-acciones { width: auto; }
+  .modal { max-width: 90%; }
 }
 
-/* Celulares pequeños (Reducción de tamaño de texto e íconos) */
 @media (max-width: 480px) {
-  .page-header h1 {
-    font-size: 20px;
-  }
-
-  .tabla {
-    font-size: 12px;
-  }
-
-  .tabla th {
-    padding: 10px;
-  }
-
-  .tabla td {
-    padding: 10px;
-  }
-
-  .btn-icon {
-    font-size: 16px;
-    padding: 3px 5px;
-    margin-left: 3px;
-  }
-
-  .col-estado {
-    width: auto;
-  }
-
-  .modal {
-    max-width: 95%;
-  }
-
-  .modal-header {
-    padding: 15px;
-  }
-
-  .modal-header h2 {
-    font-size: 18px;
-  }
-
-  .modal-body {
-    padding: 15px;
-  }
+  .page-header h1 { font-size: 20px; }
+  .tabla { font-size: 12px; }
+  .tabla th { padding: 10px; }
+  .tabla td { padding: 10px; }
+  .btn-icon { font-size: 16px; padding: 3px 5px; margin-left: 3px; }
+  .col-estado { width: auto; }
+  .modal { max-width: 95%; }
+  .modal-header { padding: 15px; }
+  .modal-header h2 { font-size: 18px; }
+  .modal-body { padding: 15px; }
 }

@@ -1,3 +1,4 @@
+//backend/src/modules/gestion/dtos/input/create-proyecto.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
 import {
     IsNotEmpty,
@@ -9,6 +10,7 @@ import {
     IsDateString 
 } from "class-validator";
 import { Transform, Type } from "class-transformer";
+import { BadRequestException } from "@nestjs/common";
 
 export class CreateProyectoDto {
 
@@ -38,11 +40,26 @@ export class CreateProyectoDto {
 
     @ApiProperty({
         example: '2026-06-30',
-        description: 'Fecha objetiva de finalización (YYYY-MM-DD)',
+        description: 'Fecha objetiva de finalización (YYYY-MM-DD). Debe ser una fecha futura.',
         required: false,
         nullable: true
     })
     @IsOptional()
-    @IsDateString({}, { message: 'La fecha de finalización debe tener un formato de fecha válido (YYYY-MM-DD)' })
+    @Transform(({ value }) => {
+        if (value && typeof value === 'string') {
+            const fechaIngresada = new Date(value);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            fechaIngresada.setHours(0, 0, 0, 0);
+            
+            if (fechaIngresada < hoy) {
+                throw new BadRequestException(
+                    'La fecha de finalización debe ser futura (no puede ser pasada)'
+                );
+            }
+        }
+        return value;
+    })
+    @IsDateString({}, { message: 'La fecha de finalización debe tener un formato válido (YYYY-MM-DD)' })
     fechaFinalizacionObjetivo?: string;
 }

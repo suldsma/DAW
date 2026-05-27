@@ -1,16 +1,15 @@
-/* src/app/auth/login/login.component.css */
+/* frontend/src/app/auth/login/login.component.css */
+/* 🎨 Paleta Sofisticada: Gradientes elegantes con púrpura y cyan */
 
-/* Contenedor principal de la pantalla de login (ocupa todo el alto) */
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #1f2937 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
 }
 
-/* Wrapper para distribuir el formulario y la sección informativa */
 .login-wrapper {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -20,12 +19,11 @@
   align-items: center;
 }
 
-/* Tarjeta del formulario de Login */
 .login-box {
   background: white;
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 50px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .login-header {
@@ -36,7 +34,7 @@
 .login-header h1 {
   font-size: 48px;
   margin: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -45,31 +43,29 @@
 
 .login-header h2 {
   font-size: 20px;
-  color: #333;
+  color: #1f2937;
   margin: 10px 0 5px;
   font-weight: 600;
 }
 
 .login-header p {
-  color: #666;
+  color: #6b7280;
   font-size: 14px;
   margin: 0;
 }
 
-/* Estilos del formulario de inicio de sesión */
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Mensaje de error general de autenticación  */
 .error-message {
-  background-color: #ffebee;
-  border: 1px solid #ff6b6b;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
   border-radius: 8px;
   padding: 12px 15px;
-  color: #c62828;
+  color: #991b1b;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -92,7 +88,6 @@
   }
 }
 
-/* Grupos de campos del formulario  */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -101,7 +96,7 @@
 
 .form-group label {
   font-weight: 600;
-  color: #333;
+  color: #1f2937;
   font-size: 14px;
 }
 
@@ -121,7 +116,7 @@
 .form-input {
   width: 100%;
   padding: 12px 15px 12px 45px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
@@ -130,24 +125,23 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .form-input.input-error {
-  border-color: #ff6b6b;
+  border-color: #dc2626;
 }
 
 .form-input.input-error:focus {
-  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .form-input:disabled {
-  background-color: #f5f5f5;
+  background-color: #f3f4f6;
   cursor: not-allowed;
 }
 
-/* Botón para mostrar u ocultar la contraseña */
 .btn-toggle-password {
   position: absolute;
   right: 15px;
@@ -168,9 +162,8 @@
   opacity: 0.5;
 }
 
-/* Mensajes de error individuales por campo  */
 .field-error {
-  color: #ff6b6b;
+  color: #dc2626;
   font-size: 12px;
   margin-top: -5px;
   display: flex;
@@ -182,9 +175,8 @@
   display: block;
 }
 
-/* Botón de envío del Login */
 .btn-login {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
   color: white;
   padding: 12px;
   border: none;
@@ -202,7 +194,7 @@
 
 .btn-login:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
 }
 
 .btn-login:disabled {
@@ -210,7 +202,6 @@
   cursor: not-allowed;
 }
 
-/* Spinner animado para indicar estado de carga (loading) */
 .loading-spinner {
   display: flex;
   align-items: center;
@@ -232,24 +223,23 @@
   }
 }
 
-/* Footer de la tarjeta con credenciales rápidas de prueba */
 .login-footer {
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e5e7eb;
 }
 
 .credentials-label {
   font-size: 12px;
-  color: #999;
+  color: #9ca3af;
   margin: 0 0 10px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .credentials {
-  background-color: #f9f9f9;
-  border-left: 3px solid #667eea;
+  background-color: #f9fafb;
+  border-left: 3px solid #7c3aed;
   padding: 10px 15px;
   border-radius: 5px;
 }
@@ -257,14 +247,13 @@
 .credentials p {
   margin: 5px 0;
   font-size: 13px;
-  color: #666;
+  color: #6b7280;
 }
 
 .credentials strong {
-  color: #333;
+  color: #1f2937;
 }
 
-/* Sección informativa lateral derecha (solo en pantallas grandes) */
 .login-info {
   color: white;
   text-align: center;
@@ -279,10 +268,9 @@
 .info-content > p {
   font-size: 16px;
   margin: 0 0 40px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
-/* Lista de características destacadas del sistema */
 .features {
   display: flex;
   flex-direction: column;
@@ -291,16 +279,18 @@
 }
 
 .feature {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   padding: 20px;
   border-radius: 10px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .feature:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .feature-icon {
@@ -318,11 +308,11 @@
 .feature p {
   margin: 0;
   font-size: 13px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .footer-text {
-  opacity: 0.8;
+  opacity: 0.85;
   font-size: 13px;
 }
 
@@ -330,9 +320,8 @@
   margin: 5px 0;
 }
 
-/* ===== DISEÑO RESPONSIVO (Media Queries) ===== */
+/* ===== RESPONSIVE ===== */
 
-/* Tablets y pantallas medianas  */
 @media (max-width: 1024px) {
   .login-wrapper {
     grid-template-columns: 1fr;
@@ -348,7 +337,6 @@
   }
 }
 
-/* Celulares grandes y medianos  */
 @media (max-width: 768px) {
   .login-container {
     padding: 10px;
@@ -372,7 +360,6 @@
   }
 }
 
-/* Celulares chicos  */
 @media (max-width: 480px) {
   .login-box {
     padding: 20px;

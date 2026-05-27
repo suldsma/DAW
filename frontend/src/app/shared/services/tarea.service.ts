@@ -1,4 +1,4 @@
-// src/app/shared/services/tarea.service.ts
+// frontend/src/app/shared/services/tarea.service.ts
 
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -80,10 +80,10 @@ export class TareaService {
     );
   }
 
-  // Obtener tablero Kanban
+  
   obtenerTableroKanban(idProyecto: number): Observable<TareasKanban> {
     return this.apiService.get<TareasKanban>(
-      `/proyectos/${idProyecto}/tareas/kanban/tablero`
+      `/proyectos/${idProyecto}/tareas/kanban`
     );
   }
 }

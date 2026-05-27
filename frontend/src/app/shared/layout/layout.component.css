@@ -1,10 +1,11 @@
-/* src/app/shared/layout/layout.component.css */
+/* frontend/src/app/shared/layout/layout.component.css */
+/* 🎨 Paleta Sofisticada: Grises elegantes + Púrpura vibrante + Cyan */
 
 .layout-container {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: #f5f5f5;
+  background-color: #f8fafc;
   overflow: hidden; 
 }
 
@@ -20,11 +21,11 @@
 /* ===== SIDEBAR ===== */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
   color: white;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
   transition: width 0.3s ease;
   position: relative;
   z-index: 100;
@@ -37,7 +38,7 @@
 
 .sidebar-header {
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -49,6 +50,10 @@
   font-weight: bold;
   margin: 0;
   white-space: nowrap;
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .btn-toggle-sidebar {
@@ -58,7 +63,12 @@
   font-size: 20px;
   cursor: pointer;
   padding: 5px;
-  display: block; 
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.btn-toggle-sidebar:hover {
+  transform: scale(1.1);
 }
 
 .sidebar-nav {
@@ -77,21 +87,23 @@
   display: flex;
   align-items: center;
   padding: 15px 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
 }
 
 .sidebar-nav a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-left-color: white;
+  background-color: rgba(124, 58, 237, 0.2);
+  border-left-color: #7c3aed;
+  color: white;
 }
 
 .sidebar-nav a.active {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-left-color: #ffd700;
-  font-weight: bold;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.3) 0%, transparent 100%);
+  border-left-color: #7c3aed;
+  font-weight: 600;
+  color: #7c3aed;
 }
 
 .sidebar-nav .icon {
@@ -115,35 +127,37 @@
 
 .sidebar-footer {
   padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-logout {
   width: 100%;
   padding: 10px;
-  background-color: #ff6b6b;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.3s ease;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .btn-logout:hover {
-  background-color: #ff5252;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
 }
 
 /* ===== HEADER ===== */
 .header {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
   padding: 15px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 70px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   width: 100%; 
 }
 
@@ -158,14 +172,19 @@
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #333;
-  display: none; 
+  color: #1f2937;
+  display: none;
+  transition: color 0.2s ease;
+}
+
+.btn-menu:hover {
+  color: #7c3aed;
 }
 
 .header-title {
   margin: 0;
   font-size: 24px;
-  color: #333;
+  color: #1f2937;
   font-weight: 600;
 }
 
@@ -187,13 +206,14 @@
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 18px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
 }
 
 .user-details {
@@ -203,13 +223,13 @@
 
 .user-name {
   font-weight: 600;
-  color: #333;
+  color: #1f2937;
   font-size: 14px;
 }
 
 .user-status {
   font-size: 12px;
-  color: #666;
+  color: #6b7280;
 }
 
 .btn-user-menu {
@@ -217,8 +237,12 @@
   border: none;
   cursor: pointer;
   font-size: 16px;
-  color: #666;
-  transition: transform 0.3s ease;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.btn-user-menu:hover {
+  color: #7c3aed;
 }
 
 /* ===== USER MENU ===== */
@@ -227,11 +251,11 @@
   top: 100%;
   right: 0;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   min-width: 180px;
   margin-top: 15px; 
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
   opacity: 0;
   visibility: hidden;
   transition: all 0.2s ease;
@@ -254,50 +278,50 @@
   display: block;
   width: 100%;
   padding: 12px 20px;
-  color: #333;
+  color: #1f2937;
   text-decoration: none;
   border: none;
   background: none;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
   font-size: 14px;
 }
 
 .user-menu a:hover,
 .btn-logout-menu:hover {
-  background-color: #f5f5f5;
+  background-color: #f3f4f6;
+  color: #7c3aed;
 }
 
 .user-menu hr {
   margin: 5px 0;
   border: none;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e5e7eb;
 }
 
 .btn-logout-menu {
-  color: #ff6b6b;
+  color: #dc2626;
 }
 
 .btn-logout-menu:hover {
-  background-color: #ffebee;
+  background-color: #fee2e2;
 }
 
-/* ===== MAIN CONTENT (CON DEGRADADO ATARDECER) ===== */
+/* ===== MAIN CONTENT ===== */
 .main-content {
   flex: 1;
   overflow-y: auto; 
   padding: 30px;
   display: flex;
   flex-direction: column;
-  
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 1%, #ffecd2 2%, #fcb69f 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 /* ===== RESPONSIVE (MÓVILES Y TABLETS) ===== */
 @media (max-width: 768px) {
   .sidebar {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 70px;
     height: calc(100% - 70px);

@@ -1,14 +1,11 @@
-<!-- src/app/modules/clientes/pages/clientes-list.component.html -->
-
 <div class="clientes-container">
   <div class="page-header">
     <h1>Gestión de Clientes</h1>
-    <button class="btn btn-primary" (click)="abrirFormulario()" type="button">
+    <button class="btn btn-primary" (click)="abrirFormulario()" type="button" aria-label="Agregar nuevo cliente">
       ✚ Agregar Cliente
     </button>
   </div>
 
-  <!-- Filtros -->
   <div class="filtros-section">
     <div class="filtro-group">
       <label for="filtroNombre">Buscar por nombre:</label>
@@ -37,12 +34,12 @@
     <button
       class="btn btn-secondary"
       (click)="cargarClientes()"
-      type="button">
+      type="button"
+      aria-label="Actualizar lista">
       🔄 Actualizar
     </button>
   </div>
 
-  <!-- Tabla de Clientes -->
   <div class="tabla-container">
     <div *ngIf="cargando" class="loading">
       <div class="spinner"></div>
@@ -50,7 +47,7 @@
     </div>
 
     <div *ngIf="!cargando && clientesFiltrados.length === 0" class="empty-state">
-      <p>📭 No hay clientes registrados</p>
+      <p>📭 No hay clientes registrados con esos criterios.</p>
     </div>
 
     <table *ngIf="!cargando && clientesFiltrados.length > 0" class="tabla">
@@ -59,7 +56,7 @@
           <th>ID</th>
           <th>Nombre</th>
           <th>Estado</th>
-          <th>Acciones</th>
+          <th class="col-acciones">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -72,39 +69,20 @@
             </span>
           </td>
           <td class="col-acciones">
-            <button
-              class="btn-icon btn-edit"
-              (click)="editarCliente(cliente)"
-              title="Editar"
-              type="button">
-              ✏️
-            </button>
-            <button
-              class="btn-icon btn-toggle"
-              (click)="cambiarEstado(cliente)"
-              title="Cambiar estado"
-              type="button">
-              🔄
-            </button>
-            <button
-              class="btn-icon btn-delete"
-              (click)="eliminarCliente(cliente)"
-              title="Eliminar"
-              type="button">
-              🗑️
-            </button>
+            <button class="btn-icon btn-edit" (click)="editarCliente(cliente)" title="Editar" type="button">✏️</button>
+            <button class="btn-icon btn-toggle" (click)="cambiarEstado(cliente)" title="Cambiar estado" type="button">🔄</button>
+            <button class="btn-icon btn-delete" (click)="eliminarCliente(cliente)" title="Eliminar" type="button">🗑️</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Modal de Formulario -->
   <div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ clienteEditando ? 'Editar Cliente' : 'Crear Cliente' }}</h2>
-        <button class="btn-close" (click)="cerrarFormulario()" type="button">✕</button>
+        <button class="btn-close" (click)="cerrarFormulario()" type="button" aria-label="Cerrar modal">✕</button>
       </div>
 
       <div class="modal-body">
